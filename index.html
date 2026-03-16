@@ -592,21 +592,22 @@ const ZONES=[
     lookAt:new THREE.Vector3(BX+(ST_top.x+HT_T.x)/2,(ST_top.y+HT_T.y)/2-0.05,BZ),
     theta:-0.1,phi:0.22,dist:0.90,
     info:{
-      tag:'Structure portante — Zone 01',
-      title:'Cadre imprégné de luciférine',
+      tag:'Zone 01 — Structure',
+      title:'Le cadre bioluminescent',
       html:`
       <div class="ip-sec">
-        <div class="ip-sh">Comment ça marche ?</div>
-        <p class="ip-p">Les tubes du cadre sont remplis d'un <strong>liquide bioluminescent</strong> — le même mécanisme que les lucioles. Une molécule appelée <strong>luciférine</strong> réagit avec une enzyme (luciférase) et de l'oxygène pour produire de la lumière <strong>sans électricité</strong>.</p>
-        <div class="ip-f">Luciférine + Enzyme + O₂ → Lumière verte (557 nm)</div>
-        <p class="ip-p">Les parois des tubes sont semi-transparentes pour laisser passer la lumière tout en gardant le liquide à l'intérieur.</p>
+        <div class="ip-sh">Le principe</div>
+        <p class="ip-p">Le cadre du LUMIBIKE contient une solution de <strong>luciférine</strong>, la molécule responsable de la lumière chez les lucioles. En présence d'une enzyme et d'oxygène, cette molécule produit de la <strong>lumière verte sans aucune électricité</strong>.</p>
+        <div class="ip-f">Luciférine + O₂ → Lumière verte</div>
+        <p class="ip-p">C'est exactement le même phénomène que dans la nature. Nous l'avons simplement adapté pour qu'il fonctionne à l'intérieur des tubes du vélo.</p>
       </div>
       <div class="ip-sec">
-        <div class="ip-sh">Chiffres clés</div>
+        <div class="ip-sh">Pourquoi c'est utile ?</div>
+        <p class="ip-p">Un cycliste qui brille est un cycliste visible. Le cadre lumineux remplace les bandes réfléchissantes classiques et fonctionne <strong>même sans lumière extérieure</strong>.</p>
         <div class="ip-stats">
-          <div class="ip-st"><div class="ip-sv">41%</div><div class="ip-sl">Efficacité lumineuse</div></div>
-          <div class="ip-st"><div class="ip-sv">557nm</div><div class="ip-sl">Couleur émise</div></div>
-          <div class="ip-st"><div class="ip-sv">0 W</div><div class="ip-sl">Électricité nécessaire</div></div>
+          <div class="ip-st"><div class="ip-sv">7h</div><div class="ip-sl">Durée d'éclairage</div></div>
+          <div class="ip-st"><div class="ip-sv">0 W</div><div class="ip-sl">Électricité</div></div>
+          <div class="ip-st"><div class="ip-sv">Vert</div><div class="ip-sl">Couleur naturelle</div></div>
         </div>
       </div>`
     }
@@ -616,21 +617,21 @@ const ZONES=[
     lookAt:new THREE.Vector3(BX+barCenter.x,barCenter.y,BZ),
     theta:-0.5,phi:0.30,dist:0.60,
     info:{
-      tag:'Guidon — Zone 02',
-      title:'Guidon lumineux',
+      tag:'Zone 02 — Guidon',
+      title:'Le guidon qui s\'allume',
       html:`
       <div class="ip-sec">
-        <div class="ip-sh">Le ruban qui brille</div>
-        <p class="ip-p">Le ruban du guidon contient des <strong>microcapsules bioluminescentes</strong> — de minuscules bulles de 0,08 mm remplies du liquide lumineux. Elles éclairent en continu et sont rechargeables en 45 secondes via les leviers de frein.</p>
-        <div class="ip-f">Microcapsule → lumière continue 6 à 8 heures</div>
-        <p class="ip-p">Plus la capsule est pleine de liquide frais, <strong>plus le guidon brille fort</strong> — une jauge lumineuse naturelle pour savoir quand recharger.</p>
+        <div class="ip-sh">Comment ça fonctionne ?</div>
+        <p class="ip-p">Le ruban du guidon est imprégné de la même solution lumineuse que le reste du vélo. Quand le cycliste tient le guidon, ses mains sont <strong>clairement visibles de face</strong> par les autres usagers de la route.</p>
+        <div class="ip-f">Luciférine + O₂ → Lumière continue</div>
+        <p class="ip-p">Le liquide lumineux est stocké dans un petit réservoir dans les leviers. Un simple mouvement de recharge suffit pour <strong>repartir pour 7 heures</strong>.</p>
       </div>
       <div class="ip-sec">
-        <div class="ip-sh">En bref</div>
+        <div class="ip-sh">En chiffres</div>
         <div class="ip-stats">
-          <div class="ip-st"><div class="ip-sv">0,08mm</div><div class="ip-sl">Taille capsules</div></div>
-          <div class="ip-st"><div class="ip-sv">2 mL</div><div class="ip-sl">Réservoir</div></div>
           <div class="ip-st"><div class="ip-sv">7h</div><div class="ip-sl">Autonomie</div></div>
+          <div class="ip-st"><div class="ip-sv">45s</div><div class="ip-sl">Recharge</div></div>
+          <div class="ip-st"><div class="ip-sv">360°</div><div class="ip-sl">Visibilité</div></div>
         </div>
       </div>`
     }
@@ -640,21 +641,21 @@ const ZONES=[
     lookAt:new THREE.Vector3(BX+BB.x,BB.y,BZ),
     theta:-0.1,phi:0.25,dist:0.65,
     info:{
-      tag:'Pédalier — Zone 03',
-      title:'Le cœur du système',
+      tag:'Zone 03 — Pédalier',
+      title:'Le réservoir central',
       html:`
       <div class="ip-sec">
-        <div class="ip-sh">Pédale = pompe à lumière</div>
-        <p class="ip-p">Le boîtier de pédalier est le <strong>réservoir principal</strong> du système. En pédalant, une petite pompe intégrée fait circuler le liquide lumineux dans tout le vélo — cadre, roues, guidon.</p>
-        <div class="ip-f">Pédalage → pompe → liquide circule → tout le vélo brille</div>
-        <p class="ip-p"><strong>Plus tu pédales vite, plus le vélo est lumineux.</strong> Le système se recharge automatiquement avec le mouvement — aucune batterie, aucun câble.</p>
+        <div class="ip-sh">Le cœur du système</div>
+        <p class="ip-p">Le boîtier de pédalier contient le <strong>réservoir principal</strong> de solution lumineuse. En pédalant, le mouvement entraîne une petite pompe qui distribue le liquide dans tout le vélo : cadre, roues et guidon.</p>
+        <div class="ip-f">Pédalage → circulation du liquide → tout le vélo brille</div>
+        <p class="ip-p">Résultat : <strong>plus on pédale, plus le vélo est lumineux</strong>. L'intensité de la lumière reflète directement l'effort du cycliste.</p>
       </div>
       <div class="ip-sec">
-        <div class="ip-sh">En bref</div>
+        <div class="ip-sh">Simple et efficace</div>
         <div class="ip-stats">
-          <div class="ip-st"><div class="ip-sv">45mL</div><div class="ip-sl">Volume réservoir</div></div>
-          <div class="ip-st"><div class="ip-sv">Auto</div><div class="ip-sl">Recharge au pédalage</div></div>
-          <div class="ip-st"><div class="ip-sv">0 W</div><div class="ip-sl">Électricité</div></div>
+          <div class="ip-st"><div class="ip-sv">1 seul</div><div class="ip-sl">Réservoir central</div></div>
+          <div class="ip-st"><div class="ip-sv">Auto</div><div class="ip-sl">Alimenté par le vélo</div></div>
+          <div class="ip-st"><div class="ip-sv">0 pile</div><div class="ip-sl">Aucune batterie</div></div>
         </div>
       </div>`
     }
@@ -664,21 +665,21 @@ const ZONES=[
     lookAt:new THREE.Vector3(BX+FW.x,FW.y,BZ),
     theta:-0.5,phi:0.16,dist:0.95,
     info:{
-      tag:'Roues — Zone 04',
-      title:'Des roues qui brillent',
+      tag:'Zone 04 — Roues',
+      title:'Des roues visibles à 360°',
       html:`
       <div class="ip-sec">
-        <div class="ip-sh">Visible de tous côtés</div>
-        <p class="ip-p">Les jantes et les rayons contiennent le liquide lumineux. Quand les roues tournent, elles créent un <strong>disque de lumière verte</strong> visible à 360°. C'est la partie la plus visible du vélo la nuit.</p>
-        <div class="ip-f">Roues tournantes → disque lumineux vert-jaune continu</div>
-        <p class="ip-p">Les rayons sont des <strong>fibres optiques</strong> qui conduisent la lumière du moyeu vers la jante — comme des fils électriques mais pour la lumière, sans aucune électricité.</p>
+        <div class="ip-sh">La partie la plus visible</div>
+        <p class="ip-p">Les roues sont l'élément le plus exposé du vélo. En les rendant lumineuses, on assure une visibilité <strong>sur les côtés</strong>, là où les phares classiques n'éclairent pas. Un automobiliste qui double voit immédiatement le cycliste.</p>
+        <div class="ip-f">Roues lumineuses → visible de côté, de face et de dos</div>
+        <p class="ip-p">La solution de luciférine circule depuis le moyeu jusqu'à la jante. Quand les roues tournent, elles forment un <strong>disque lumineux vert</strong> très reconnaissable.</p>
       </div>
       <div class="ip-sec">
-        <div class="ip-sh">Impact sécurité</div>
+        <div class="ip-sh">Sécurité</div>
         <div class="ip-stats">
-          <div class="ip-st"><div class="ip-sv">×3,4</div><div class="ip-sl">Plus visible la nuit</div></div>
+          <div class="ip-st"><div class="ip-sv">×3</div><div class="ip-sl">Plus visible la nuit</div></div>
+          <div class="ip-st"><div class="ip-sv">360°</div><div class="ip-sl">Angles couverts</div></div>
           <div class="ip-st"><div class="ip-sv">7h</div><div class="ip-sl">Autonomie</div></div>
-          <div class="ip-st"><div class="ip-sv">45s</div><div class="ip-sl">Recharge</div></div>
         </div>
       </div>`
     }
@@ -688,29 +689,22 @@ const ZONES=[
     lookAt:new THREE.Vector3(BX-0.622,1.19,BZ),
     theta:0.45,phi:0.28,dist:0.36,
     info:{
-      tag:'Casque — Zone 05',
-      title:'Le casque qui te rend visible',
+      tag:'Zone 05 — Casque',
+      title:'Le casque bioluminescent',
       html:`
       <div class="ip-sec">
-        <div class="ip-sh">Pourquoi ça brille ?</div>
-        <p class="ip-p">Le casque utilise la même chimie que les <strong>lucioles</strong>. Une molécule naturelle appelée <strong>luciférine</strong> réagit avec une enzyme et de l'oxygène pour produire de la lumière verte — sans aucune source d'énergie électrique.</p>
-        <div class="ip-f">Luciférine + Enzyme + Oxygène → Lumière verte 557nm</div>
-        <p class="ip-p">La réaction se fait en 3 étapes : <strong>activation</strong> de la molécule, <strong>oxydation</strong> par l'air, puis <strong>émission</strong> d'un photon vert. C'est 100% naturel et biodégradable.</p>
+        <div class="ip-sh">La même chimie que les lucioles</div>
+        <p class="ip-p">Le casque utilise la <strong>bioluminescence</strong> : un phénomène naturel que l'on retrouve chez les lucioles, certains champignons et des créatures marines. La molécule clé s'appelle la <strong>luciférine</strong>.</p>
+        <div class="ip-f">Luciférine + Oxygène → Lumière verte (sans chaleur)</div>
+        <p class="ip-p">Cette réaction chimique produit de la lumière de façon très efficace et <strong>sans dégager de chaleur</strong>, ce qui la rend parfaitement adaptée à un usage porté sur la tête.</p>
       </div>
       <div class="ip-sec">
-        <div class="ip-sh">En bref</div>
+        <div class="ip-sh">Pourquoi c'est important ?</div>
+        <p class="ip-p">La tête est le point le plus haut du cycliste — donc le plus visible. Un casque lumineux est repéré de <strong>loin et dans toutes les directions</strong>, même dans le brouillard ou la pluie.</p>
         <div class="ip-stats">
-          <div class="ip-st"><div class="ip-sv">557nm</div><div class="ip-sl">Lumière verte</div></div>
-          <div class="ip-st"><div class="ip-sv">Bio</div><div class="ip-sl">100% naturel</div></div>
-          <div class="ip-st"><div class="ip-sv">0 pile</div><div class="ip-sl">Sans batterie</div></div>
-        </div>
-      </div>
-      <div class="ip-sec">
-        <div class="ip-sh">La science derrière</div>
-        <div class="ip-steps">
-          <div class="ip-step"><div class="ip-snum">1</div><div class="ip-stxt"><strong>Activation :</strong> la luciférine se combine avec de l'énergie chimique (ATP) pour devenir réactive.</div></div>
-          <div class="ip-step"><div class="ip-snum">2</div><div class="ip-stxt"><strong>Oxydation :</strong> l'oxygène de l'air attaque la molécule activée et crée un état instable.</div></div>
-          <div class="ip-step"><div class="ip-snum">3</div><div class="ip-stxt"><strong>Flash :</strong> la molécule se décompose et libère son énergie sous forme de <strong>lumière verte</strong>.</div></div>
+          <div class="ip-st"><div class="ip-sv">100%</div><div class="ip-sl">Naturel</div></div>
+          <div class="ip-st"><div class="ip-sv">Vert</div><div class="ip-sl">Couleur la plus visible</div></div>
+          <div class="ip-st"><div class="ip-sv">0 pile</div><div class="ip-sl">Sans électricité</div></div>
         </div>
       </div>`
     }
@@ -954,6 +948,8 @@ animate();
         <div style="font-size:clamp(.8rem,2.5vw,1.1rem);color:#c8ff00;font-weight:700;" id="hud-speed">0 km/h</div>
         <div style="font-size:clamp(.55rem,1.5vw,.72rem);color:#4a7a30;margin-top:2px;" id="hud-lap">Tour 1/3</div>
         <div style="font-size:clamp(.55rem,1.5vw,.72rem);color:#88cc44;margin-top:1px;" id="hud-pos">1er 🥇</div>
+        <!-- Bouton sortir -->
+        <button id="hud-exit" style="pointer-events:all;margin-top:8px;background:rgba(4,10,6,.9);border:1px solid #3a1a14;color:#ff6644;font-family:'JetBrains Mono',monospace;font-size:.58rem;letter-spacing:.10em;padding:5px 10px;cursor:pointer;text-transform:uppercase;">✕ Quitter</button>
       </div>
       <div style="text-align:center;">
         <div id="hud-msg" style="font-size:clamp(1rem,4vw,2rem);font-weight:900;color:#c8ff00;text-shadow:0 0 25px #aaff00;opacity:0;transition:opacity .3s;"></div>
@@ -966,6 +962,11 @@ animate();
     </div>
     <!-- Mini-map -->
     <canvas id="minimap" style="position:absolute;bottom:14px;right:14px;border:1px solid #1e3a14;opacity:.85;" width="120" height="90"></canvas>
+    <!-- Classement en direct (coin bas-gauche) -->
+    <div id="hud-lb" style="position:absolute;bottom:14px;left:14px;background:rgba(2,8,4,.88);border:1px solid #1e3a14;padding:10px 14px;min-width:170px;">
+      <div style="font-family:'JetBrains Mono',monospace;font-size:.52rem;letter-spacing:.16em;color:#4a7a30;text-transform:uppercase;margin-bottom:6px;">🏆 Classement</div>
+      <div id="hud-lb-list" style="font-family:'JetBrains Mono',monospace;font-size:.68rem;color:#c0d8a0;line-height:1.8;"></div>
+    </div>
   </div>
 
   <!-- Canvas jeu -->
@@ -1095,32 +1096,51 @@ function pName(){ return(document.getElementById('player-name').value||'Anonyme'
 
 // ── PISTE — grande map avec BEAUCOUP de virages ───────────────────
 function buildBigTrack(W,H){
+  // Circuit style F1 propre — boucle fermée, sens horaire
+  // 2 longues droites + épingle + virages larges + chicane
   const pts=[];
   const cx=W/2, cy=H/2;
-  const rx=W*0.38, ry=H*0.38;
-  const N=200;
-  for(let i=0;i<N;i++){
-    const t=(i/N)*Math.PI*2;
-    // Circuit ovale de base avec 2 chicanes et 1 épingle
-    let x=cx+Math.cos(t)*rx;
-    let y=cy+Math.sin(t)*ry;
+  const s=Math.min(W,H);
+  const hw=s*0.43, hh=s*0.30; // demi-dimensions
+  const xL=cx-hw, xR=cx+hw, yT=cy-hh, yB=cy+hh;
+  const rc=s*0.09;  // rayon virage coin
+  const re=s*0.055; // rayon épingle
+  const rch=s*0.05; // rayon chicane
 
-    // Chicane côté droit (t≈0) — décalage en S
-    const c1=Math.exp(-Math.pow(t-0.3,2)*18)*0.08;
-    const c2=Math.exp(-Math.pow(t-0.6,2)*18)*0.08;
-    y+=Math.sin(t)*ry*(c1-c2)*1.2;
-
-    // Épingle serrée en bas (t≈PI/2) — rétrécissement
-    const ep=Math.exp(-Math.pow(t-Math.PI*0.5,2)*12);
-    x-=Math.cos(t)*rx*ep*0.18;
-
-    // Chicane côté gauche (t≈PI+0.3)
-    const c3=Math.exp(-Math.pow(t-(Math.PI+0.3),2)*18)*0.08;
-    const c4=Math.exp(-Math.pow(t-(Math.PI+0.6),2)*18)*0.08;
-    y+=Math.sin(t)*ry*(c3-c4)*1.0;
-
-    pts.push({x,y});
+  function arc(ox,oy,r,a1,a2){
+    const n=Math.max(8,Math.round(Math.abs(a2-a1)*r/5));
+    for(let i=0;i<=n;i++){
+      const a=a1+(a2-a1)*i/n;
+      pts.push({x:ox+Math.cos(a)*r,y:oy+Math.sin(a)*r});
+    }
   }
+  function seg(x1,y1,x2,y2){
+    const n=Math.max(5,Math.round(Math.hypot(x2-x1,y2-y1)/8));
+    for(let i=1;i<=n;i++)
+      pts.push({x:x1+(x2-x1)*i/n,y:y1+(y2-y1)*i/n});
+  }
+
+  // ── Ligne droite principale bas (START/FINISH) → droite
+  seg(xL+rc, yB, xR-re, yB);
+  // ── Épingle serrée bas-droite
+  arc(xR-re, yB-re, re, Math.PI/2, -Math.PI/2);
+  // ── Droite montante droite
+  seg(xR, yB-re, xR, yT+rc);
+  // ── Virage large haut-droite
+  arc(xR-rc, yT+rc, rc, 0, -Math.PI/2);
+  // ── Droite du haut (droite→gauche) avec chicane au centre
+  seg(xR-rc, yT, cx+rch*2+rch, yT);
+  // Chicane : deux demi-cercles vers le haut
+  arc(cx+rch*2, yT-rch, rch,  Math.PI/2, -Math.PI/2);
+  arc(cx,        yT-rch, rch, -Math.PI/2,  Math.PI/2);
+  seg(cx-rch, yT, xL+rc, yT);
+  // ── Virage large haut-gauche
+  arc(xL+rc, yT+rc, rc, -Math.PI/2, Math.PI);
+  // ── Droite descendante gauche
+  seg(xL, yT+rc, xL, yB-rc);
+  // ── Virage bas-gauche retour
+  arc(xL+rc, yB-rc, rc, Math.PI, Math.PI/2);
+
   return pts;
 }
 
@@ -1155,7 +1175,10 @@ function stopGame(){
   document.getElementById('g-hud').style.display='none';
   document.getElementById('g-mobile').style.display='none';
   closeLobby();
+  showScreen('gs-title');
+  refreshTitle();
 }
+document.getElementById('hud-exit').addEventListener('click',()=>stopGame());
 
 // ── Contrôles clavier ─────────────────────────────────────────────
 window.addEventListener('keydown',e=>gKeys[e.code]=true);
@@ -1260,8 +1283,8 @@ function runGame(opts){
   const player={
     x:spawn0.x, y:spawn0.y,
     angle:Math.atan2(TRACK[1].y-spawn0.y,TRACK[1].x-spawn0.x),
-    speed:0, maxSpeed:6.8, accel:0.22, friction:0.95,
-    steer:0.055, boost:100, boosting:false,
+    speed:0, maxSpeed:3.2, accel:0.10, friction:0.94,
+    steer:0.042, boost:100, boosting:false,
     lap:1, cp:0, cpFrac:0, lapStart:null, bestLap:Infinity, lastLap:null,
     finished:false, trail:[], name:pName(), color:'#c8ff00',
     offTrackTimer:0
@@ -1481,7 +1504,7 @@ function runGame(opts){
     else  player.speed*=player.friction;
     if(B) player.speed=Math.max(0,player.speed-player.accel*2.5);
     if(bst){
-      player.speed=Math.min(player.maxSpeed*1.75,player.speed+.4);
+      player.speed=Math.min(player.maxSpeed*1.5,player.speed+.18);
       player.boost=Math.max(0,player.boost-1.5);player.boosting=true;
     } else { player.boosting=false; }
     if(!bst) player.boost=Math.min(100,player.boost+.18);
@@ -1545,7 +1568,7 @@ function runGame(opts){
       let da=ta-r.angle;
       while(da>Math.PI)da-=Math.PI*2;while(da<-Math.PI)da+=Math.PI*2;
       r.angle+=da*.10;
-      if(!r.finished) r.speed=Math.min(r.maxSpeed,r.speed+.14);
+      if(!r.finished) r.speed=Math.min(r.maxSpeed,r.speed+.07);
       const nx2=r.x+Math.cos(r.angle)*r.speed;
       const ny2=r.y+Math.sin(r.angle)*r.speed;
       if(onTrack(nx2,ny2)){r.x=nx2;r.y=ny2;}
@@ -1566,8 +1589,9 @@ function runGame(opts){
   }
 
   // ── HUD ───────────────────────────────────────────────────────
+  let lbUpdateTimer=0;
   function updateHUD(){
-    const kmh=Math.round(player.speed/player.maxSpeed*75*(player.boosting?1.75:1));
+    const kmh=Math.round(player.speed/player.maxSpeed*55*(player.boosting?1.5:1));
     document.getElementById('hud-speed').textContent=kmh+' km/h';
     document.getElementById('hud-lap').textContent=player.finished?'Terminé !':`Tour ${Math.min(player.lap,LAPS)}/${LAPS}`;
     document.getElementById('hud-pos').textContent=posStr[getPos()]||'5ème';
@@ -1579,6 +1603,28 @@ function runGame(opts){
     bel.textContent=`⚡${'█'.repeat(bp)}${'░'.repeat(8-bp)}`;
     bel.style.color=player.boosting?'#ffff44':player.boost>30?'#88ff44':'#ff4444';
     if(msgT>0){msgT-=16;if(msgT<=0)document.getElementById('hud-msg').style.opacity='0';}
+
+    // Classement en direct (mis à jour toutes les ~0.5s)
+    lbUpdateTimer+=16;
+    if(lbUpdateTimer>500){
+      lbUpdateTimer=0;
+      // Construire classement : joueur + rivaux, triés par progression
+      const all=[
+        {name:player.name,color:'#c8ff00',prog:(player.lap-1)*TN+player.cpFrac,best:player.bestLap,finished:player.finished},
+        ...rivals.map(r=>({name:r.name,color:r.color,prog:(r.lap-1)*TN+r.cpFrac,best:r.bestLap,finished:r.finished}))
+      ];
+      all.sort((a,b)=>b.prog-a.prog);
+      const medals=['🥇','🥈','🥉','4','5','6'];
+      document.getElementById('hud-lb-list').innerHTML=all.map((e,i)=>`
+        <div style="display:flex;justify-content:space-between;gap:10px;color:${e.color};${e.name===player.name?'font-weight:700;':'opacity:.8;'}">
+          <span>${medals[i]||i+1} ${e.name}</span>
+          <span style="color:#4a7a30">${e.best<Infinity?fmt(e.best):'--'}</span>
+        </div>`).join('');
+
+      // Aussi mettre à jour le classement global (localStorage) visible sur l'écran titre
+      const sc=getScores();
+      // déjà géré à la fin de course
+    }
   }
 
   // ── Minimap ───────────────────────────────────────────────────
