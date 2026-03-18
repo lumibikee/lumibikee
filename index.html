@@ -229,13 +229,158 @@ cursor:pointer;text-transform:uppercase;transition:all .18s;}
     <div id="nav-lam">λ ≈ 557 nm</div>
     <button class="nbtn" id="n-about">Le projet</button>
     <button class="nbtn" id="n-chem">Chimie</button>
+    <button class="nbtn" id="n-stats">📊 Stats</button>
     <button class="nbtn" id="n-game" style="background:#ccff00;color:#040a06;border-color:#ccff00;font-weight:700;">🏁 Mini Jeu</button>
     <button class="nbtn hi" id="n-tour">▶ Visite guidée</button>
   </div>
 </div>
 
-<!-- ═══ ZONE PANEL ═══ -->
+<!-- ═══ PAGE STATS ═══ -->
 
+<div id="stats-overlay" style="display:none;position:fixed;inset:0;z-index:150;background:#020804;overflow-y:auto;padding-top:60px;">
+  <style>
+    #stats-overlay { font-family:'JetBrains Mono',monospace; color:#8aaa6a; }
+    .st-header { padding:36px 40px 20px; border-bottom:1px solid #1e3a14; display:flex; justify-content:space-between; align-items:flex-end; }
+    .st-title { font-size:clamp(1.4rem,4vw,2.2rem); font-weight:900; color:#c8ff00; letter-spacing:.12em; text-shadow:0 0 30px #aaff0044; }
+    .st-sub { font-size:.62rem; letter-spacing:.18em; color:#4a7a30; text-transform:uppercase; margin-top:4px; }
+    .st-close { background:none; border:1px solid #2a4a1a; color:#4a7a30; font-family:'JetBrains Mono',monospace; font-size:.65rem; letter-spacing:.10em; padding:8px 16px; cursor:pointer; text-transform:uppercase; transition:all .18s; }
+    .st-close:hover { border-color:#c8ff00; color:#c8ff00; }
+    .st-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:16px; padding:28px 40px; }
+    .st-card { background:#050e05; border:1px solid #1e3a14; padding:20px 18px; position:relative; overflow:hidden; }
+    .st-card::before { content:''; position:absolute; top:0; left:0; width:3px; height:100%; background:#c8ff00; opacity:.6; }
+    .st-card-val { font-size:clamp(1.6rem,4vw,2.4rem); font-weight:900; color:#c8ff00; text-shadow:0 0 16px #aaff0055; line-height:1; margin-bottom:6px; }
+    .st-card-lbl { font-size:.58rem; letter-spacing:.14em; color:#4a7a30; text-transform:uppercase; }
+    .st-card-sub { font-size:.62rem; color:#2a4a1a; margin-top:4px; }
+    .st-section { padding:0 40px 28px; }
+    .st-section-title { font-size:.65rem; letter-spacing:.20em; color:#4a7a30; text-transform:uppercase; margin-bottom:16px; padding-bottom:8px; border-bottom:1px solid #1e3a14; display:flex; align-items:center; gap:10px; }
+    .st-section-title::before { content:''; width:16px; height:2px; background:#c8ff00; }
+    .st-chart-wrap { background:#050e05; border:1px solid #1e3a14; padding:18px; margin-bottom:16px; }
+    .st-bar-row { display:flex; align-items:center; gap:12px; margin-bottom:10px; }
+    .st-bar-lbl { font-size:.65rem; color:#7aaa00; min-width:80px; text-align:right; }
+    .st-bar-track { flex:1; height:8px; background:#0a1408; border-radius:4px; overflow:hidden; }
+    .st-bar-fill { height:100%; border-radius:4px; background:linear-gradient(90deg,#5a9900,#c8ff00); transition:width 1.2s cubic-bezier(.22,1,.36,1); box-shadow:0 0 8px #aaff0033; }
+    .st-bar-val { font-size:.62rem; color:#c8ff00; min-width:36px; }
+    .st-live-dot { width:8px; height:8px; border-radius:50%; background:#c8ff00; display:inline-block; animation:pulse-dot 1.5s ease-in-out infinite; }
+    @keyframes pulse-dot { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.4;transform:scale(.7)} }
+    .st-table { width:100%; border-collapse:collapse; font-size:.70rem; }
+    .st-table th { color:#4a7a30; font-weight:400; letter-spacing:.12em; text-align:left; padding:6px 0; border-bottom:1px solid #1e3a14; font-size:.58rem; text-transform:uppercase; }
+    .st-table td { padding:7px 0; border-bottom:1px solid #0a180a; color:#8aaa6a; }
+    .st-table td:first-child { color:#c8ff00; }
+    canvas.st-canvas { width:100%; border-radius:2px; }
+    .st-activity { display:flex; align-items:flex-end; gap:3px; height:50px; margin-top:8px; }
+    .st-activity-bar { flex:1; background:#0a1408; border-radius:2px 2px 0 0; min-height:3px; transition:height .8s ease; position:relative; }
+    .st-activity-bar:hover::after { content:attr(data-tip); position:absolute; bottom:110%; left:50%; transform:translateX(-50%); background:#0a1408; border:1px solid #1e3a14; padding:3px 7px; font-size:.55rem; white-space:nowrap; color:#c8ff00; z-index:10; }
+  </style>
+
+  <div class="st-header">
+    <div>
+      <div class="st-title">DASHBOARD</div>
+      <div class="st-sub">Statistiques en temps réel — LUMIBIKE</div>
+    </div>
+    <button class="st-close" id="stats-close">✕ Fermer</button>
+  </div>
+
+  <!-- KPI cards -->
+
+  <div class="st-grid">
+    <div class="st-card">
+      <div class="st-card-val" id="st-visits">—</div>
+      <div class="st-card-lbl">Visites totales</div>
+      <div class="st-card-sub" id="st-visits-today">Chargement...</div>
+    </div>
+    <div class="st-card">
+      <div class="st-card-val"><span class="st-live-dot"></span> <span id="st-online">—</span></div>
+      <div class="st-card-lbl">En ligne maintenant</div>
+      <div class="st-card-sub">Actifs dans les 2 min</div>
+    </div>
+    <div class="st-card">
+      <div class="st-card-val" id="st-races">—</div>
+      <div class="st-card-lbl">Courses jouées</div>
+      <div class="st-card-sub" id="st-races-today">Depuis le début</div>
+    </div>
+    <div class="st-card">
+      <div class="st-card-val" id="st-best">—</div>
+      <div class="st-card-lbl">Record du monde</div>
+      <div class="st-card-sub" id="st-best-by">Meilleur tour</div>
+    </div>
+    <div class="st-card">
+      <div class="st-card-val" id="st-players">—</div>
+      <div class="st-card-lbl">Joueurs uniques</div>
+      <div class="st-card-sub">Ont joué au moins 1 course</div>
+    </div>
+    <div class="st-card">
+      <div class="st-card-val" id="st-avg">—</div>
+      <div class="st-card-lbl">Temps moyen</div>
+      <div class="st-card-sub">Meilleur tour moyen</div>
+    </div>
+  </div>
+
+  <!-- Graphique activité 24h -->
+
+  <div class="st-section">
+    <div class="st-section-title">Activité des dernières 24 heures</div>
+    <div class="st-chart-wrap">
+      <div style="font-size:.58rem;color:#2a4a1a;margin-bottom:10px;">Visites par heure</div>
+      <div class="st-activity" id="st-activity-bars"></div>
+      <div style="display:flex;justify-content:space-between;font-size:.52rem;color:#2a4a1a;margin-top:4px;" id="st-activity-labels"></div>
+    </div>
+  </div>
+
+  <!-- Top joueurs -->
+
+  <div class="st-section">
+    <div class="st-section-title">Top 5 — Meilleurs pilotes</div>
+    <div class="st-chart-wrap">
+      <div id="st-top-bars"></div>
+    </div>
+  </div>
+
+  <!-- Tableau classement complet -->
+
+  <div class="st-section">
+    <div class="st-section-title">Classement complet</div>
+    <div class="st-chart-wrap" style="overflow-x:auto;">
+      <table class="st-table">
+        <thead><tr>
+          <th>Pos</th><th>Joueur</th><th>Meilleur tour</th><th>Total 3 tours</th><th>Date</th>
+        </tr></thead>
+        <tbody id="st-table-body"><tr><td colspan="5" style="color:#2a4a1a;text-align:center;padding:20px;">Chargement...</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Stats globales projet -->
+
+  <div class="st-section">
+    <div class="st-section-title">À propos du projet</div>
+    <div class="st-chart-wrap">
+      <div class="st-bar-row">
+        <div class="st-bar-lbl">Efficacité</div>
+        <div class="st-bar-track"><div class="st-bar-fill" style="width:41%"></div></div>
+        <div class="st-bar-val">41%</div>
+      </div>
+      <div class="st-bar-row">
+        <div class="st-bar-lbl">Autonomie</div>
+        <div class="st-bar-track"><div class="st-bar-fill" style="width:87.5%"></div></div>
+        <div class="st-bar-val">7h / 8h</div>
+      </div>
+      <div class="st-bar-row">
+        <div class="st-bar-lbl">Visibilité</div>
+        <div class="st-bar-track"><div class="st-bar-fill" style="width:100%"></div></div>
+        <div class="st-bar-val">× 3</div>
+      </div>
+      <div class="st-bar-row">
+        <div class="st-bar-lbl">Électricité</div>
+        <div class="st-bar-track"><div class="st-bar-fill" style="width:0%"></div></div>
+        <div class="st-bar-val">0 W</div>
+      </div>
+    </div>
+  </div>
+
+  <div style="text-align:center;padding:20px 40px 40px;font-size:.58rem;color:#1e3a14;letter-spacing:.10em;">
+    LUMIBIKE · N Sigma Pi · Données mises à jour en temps réel via Supabase
+  </div>
+</div>
 <div id="zpanel">
   <button class="zb" data-z="0"><span class="zb-dot"></span>Vue globale<span class="zb-n">00</span></button>
   <button class="zb" data-z="1"><span class="zb-dot"></span>Cadre<span class="zb-n">01</span></button>
@@ -1009,6 +1154,149 @@ const SB_URL = 'https://ujprdxwosjnfrvvidryf.supabase.co';
 const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVqcHJkeHdvc2puZnJ2dmlkcnlmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM4MzA0MzMsImV4cCI6MjA4OTQwNjQzM30.9V24EUho-2QVsdv0rvyY2udY9enatZTNkXCj2Siw0lo';
 const SB_HDR = { 'Content-Type':'application/json', 'apikey':SB_KEY, 'Authorization':'Bearer '+SB_KEY };
 
+// ── Tracking visite ───────────────────────────────────────────────
+// Enregistre une session au chargement de la page
+(async function trackVisit(){
+  try {
+    const sid = Math.random().toString(36).slice(2);
+    sessionStorage.setItem('lb_sid', sid);
+    await fetch(SB_URL+'/rest/v1/visits', {
+      method:'POST',
+      headers:{...SB_HDR,'Prefer':'return=minimal'},
+      body: JSON.stringify({ session_id: sid, page: 'lumibike' })
+    });
+    // Heartbeat toutes les 30s pour comptage "en ligne"
+    setInterval(async ()=>{
+      await fetch(SB_URL+'/rest/v1/heartbeats', {
+        method:'POST',
+        headers:{...SB_HDR,'Prefer':'return=minimal'},
+        body: JSON.stringify({ session_id: sid })
+      });
+    }, 30000);
+  } catch(e){}
+})();
+
+// ── PAGE STATS ────────────────────────────────────────────────────
+document.getElementById('n-stats').addEventListener('click', ()=>{
+  document.getElementById('stats-overlay').style.display='block';
+  loadStats();
+});
+document.getElementById('stats-close').addEventListener('click', ()=>{
+  document.getElementById('stats-overlay').style.display='none';
+});
+
+function fmt2(ms){
+  if(!ms||ms<=0)return'--:--.--';
+  return`${Math.floor(ms/60000)}:${String(Math.floor((ms%60000)/1000)).padStart(2,'0')}.${String(Math.floor((ms%1000)/10)).padStart(2,'0')}`;
+}
+
+async function loadStats(){
+  try {
+    // 1. Scores
+    const scRes = await fetch(SB_URL+'/rest/v1/scores?select=name,best_lap,total_time,created_at&order=best_lap.asc&limit=50', {headers:SB_HDR});
+    const scores = await scRes.json();
+
+    // 2. Visites totales
+    const vRes = await fetch(SB_URL+'/rest/v1/visits?select=created_at&order=created_at.desc', {headers:SB_HDR});
+    const visits = Array.isArray(await vRes.clone().json()) ? await vRes.json() : [];
+
+    // 3. En ligne (heartbeat dans les 2 dernières minutes)
+    const twoMinAgo = new Date(Date.now()-120000).toISOString();
+    const hRes = await fetch(SB_URL+`/rest/v1/heartbeats?select=session_id&created_at=gte.${twoMinAgo}`, {headers:SB_HDR});
+    const hb = Array.isArray(await hRes.clone().json()) ? await hRes.json() : [];
+    const online = new Set(hb.map(h=>h.session_id)).size;
+
+    // ── KPI Cards ──────────────────────────────────────────────
+    const totalVisits = visits.length || 0;
+    const today = new Date().toDateString();
+    const visitsToday = visits.filter(v=>new Date(v.created_at).toDateString()===today).length;
+
+    document.getElementById('st-visits').textContent = totalVisits.toLocaleString('fr-FR');
+    document.getElementById('st-visits-today').textContent = `+${visitsToday} aujourd'hui`;
+    document.getElementById('st-online').textContent = Math.max(1, online);
+    document.getElementById('st-races').textContent = scores.length;
+
+    if(scores.length){
+      const best = scores[0];
+      document.getElementById('st-best').textContent = fmt2(best.best_lap);
+      document.getElementById('st-best-by').textContent = `par ${best.name}`;
+
+      const unique = new Set(scores.map(s=>s.name)).size;
+      document.getElementById('st-players').textContent = unique;
+
+      const avg = Math.round(scores.reduce((a,s)=>a+(s.best_lap||0),0)/scores.length);
+      document.getElementById('st-avg').textContent = fmt2(avg);
+    } else {
+      ['st-best','st-players','st-avg'].forEach(id=>document.getElementById(id).textContent='—');
+      document.getElementById('st-best-by').textContent='Aucune course encore';
+    }
+
+    // ── Graphique activité 24h ─────────────────────────────────
+    const now = new Date();
+    const hours = Array.from({length:24},(_,i)=>{
+      const h = new Date(now);
+      h.setHours(now.getHours()-23+i, 0,0,0);
+      return h;
+    });
+    const counts = hours.map(h=>{
+      const next = new Date(h); next.setHours(h.getHours()+1);
+      return visits.filter(v=>{
+        const d=new Date(v.created_at);
+        return d>=h && d<next;
+      }).length;
+    });
+    const maxC = Math.max(...counts, 1);
+    const barsEl = document.getElementById('st-activity-bars');
+    const labelsEl = document.getElementById('st-activity-labels');
+    barsEl.innerHTML = counts.map((c,i)=>{
+      const pct = Math.max(4, Math.round(c/maxC*100));
+      const col = c>0 ? `rgba(${Math.round(100+c/maxC*100)},255,0,${0.3+c/maxC*0.7})` : '#0a1408';
+      return `<div class="st-activity-bar" style="background:${col};height:${pct}%;border-radius:2px 2px 0 0;" data-tip="${c} visite${c>1?'s':''}"></div>`;
+    }).join('');
+    labelsEl.innerHTML = hours.filter((_,i)=>i%4===0).map(h=>`<span>${String(h.getHours()).padStart(2,'0')}h</span>`).join('');
+
+    // ── Top 5 barres ───────────────────────────────────────────
+    const top5 = scores.slice(0,5);
+    const worstLap = top5.length ? top5[top5.length-1].best_lap : 1;
+    const bestLap = top5.length ? top5[0].best_lap : 1;
+    const medals = ['🥇','🥈','🥉','4','5'];
+    document.getElementById('st-top-bars').innerHTML = top5.map((s,i)=>{
+      const pct = top5.length===1 ? 100 : Math.round(100-(s.best_lap-bestLap)/(worstLap-bestLap||1)*60);
+      return `<div class="st-bar-row">
+        <div class="st-bar-lbl">${medals[i]} ${s.name}</div>
+        <div class="st-bar-track"><div class="st-bar-fill" style="width:${pct}%"></div></div>
+        <div class="st-bar-val">${fmt2(s.best_lap)}</div>
+      </div>`;
+    }).join('') || '<div style="color:#2a4a1a;text-align:center;padding:16px;font-size:.7rem;">Aucun score encore</div>';
+
+    // ── Tableau complet ────────────────────────────────────────
+    const tbody = document.getElementById('st-table-body');
+    if(!scores.length){
+      tbody.innerHTML='<tr><td colspan="5" style="color:#2a4a1a;text-align:center;padding:20px;">Aucune course enregistrée</td></tr>';
+    } else {
+      tbody.innerHTML = scores.map((s,i)=>{
+        const col = i===0?'#c8ff00':i<3?'#88cc44':'#8aaa6a';
+        const date = new Date(s.created_at).toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
+        return `<tr>
+          <td style="color:${col};font-weight:${i<3?700:400}">${['🥇','🥈','🥉'][i]||i+1}</td>
+          <td style="color:${col};font-weight:${i<3?700:400}">${s.name}</td>
+          <td style="font-variant-numeric:tabular-nums">${fmt2(s.best_lap)}</td>
+          <td style="font-variant-numeric:tabular-nums;color:#4a7a30">${fmt2(s.total_time)}</td>
+          <td style="color:#2a4a1a;font-size:.65rem">${date}</td>
+        </tr>`;
+      }).join('');
+    }
+
+  } catch(e){
+    console.warn('Stats load error:', e);
+    document.getElementById('st-visits').textContent='—';
+    document.getElementById('st-online').textContent='—';
+    document.getElementById('st-races').textContent='—';
+    document.getElementById('st-table-body').innerHTML=
+      '<tr><td colspan="5" style="color:#cc4400;text-align:center;padding:20px;">Erreur de chargement — vérifie la connexion</td></tr>';
+  }
+}
+
 async function saveScore(name, bestLap, totalTime){
   try {
     await fetch(SB_URL+'/rest/v1/scores', {
@@ -1154,75 +1442,62 @@ function pName(){ return(document.getElementById('player-name').value||'Anonyme'
 
 // ── PISTE ─────────────────────────────────────────────────────────
 function buildBigTrack(W,H){
-  // Circuit fermé style karting/F1
-  // Construit arc par arc, referme exactement sur lui-même
   const pts=[];
   const cx=W/2, cy=H/2;
   const s=Math.min(W,H);
 
-  // Marges pour rester dans l'écran
-  const mx=W*0.08, my=H*0.10;
+  const mx=W*0.07, my=H*0.09;
   const x0=mx, x1=W-mx, y0=my, y1=H-my;
-  const midX=cx, midY=cy;
+
+  // Pas très petit pour éviter les gaps (point tous les ~5px)
+  const STEP=5;
 
   function arc(ox,oy,r,a1,a2){
-    const steps=Math.max(10,Math.round(Math.abs(a2-a1)*r/6));
-    for(let i=0;i<=steps;i++){
-      const a=a1+(a2-a1)*i/steps;
+    const len=Math.abs(a2-a1)*r;
+    const n=Math.max(12,Math.round(len/STEP));
+    for(let i=0;i<=n;i++){
+      const a=a1+(a2-a1)*i/n;
       pts.push({x:ox+Math.cos(a)*r, y:oy+Math.sin(a)*r});
     }
   }
   function line(x1,y1,x2,y2){
-    const n=Math.max(6,Math.round(Math.hypot(x2-x1,y2-y1)/10));
+    const len=Math.hypot(x2-x1,y2-y1);
+    const n=Math.max(8,Math.round(len/STEP));
     for(let i=1;i<=n;i++)
       pts.push({x:x1+(x2-x1)*i/n, y:y1+(y2-y1)*i/n});
   }
 
-  // Rayons des virages
-  const R_large = s*0.10;   // virage large
-  const R_mid   = s*0.07;   // virage moyen
-  const R_tight = s*0.045;  // virage serré
-  const R_hair  = s*0.035;  // épingle
+  const RL = s*0.09;   // virage large (coins)
+  const RM = s*0.065;  // virage moyen
+  const RE = s*0.038;  // épingle serrée
 
-  // ─ SENS HORAIRE ─
-  // 1. Ligne droite principale (bas) : gauche → droite
-  const startX = x0 + R_large;
-  line(startX, y1, x1-R_hair, y1);
+  // ── Circuit en sens horaire ──────────────────────────────────
+  // Départ : bas-gauche, ligne droite principale vers la droite
 
-  // 2. Épingle bas-droite (180° serrée)
-  arc(x1-R_hair, y1-R_hair, R_hair, Math.PI/2, -Math.PI/2);
-
-  // 3. Droite montante droite
-  line(x1, y1-R_hair, x1, midY+R_mid);
-
-  // 4. Virage haut-droite moyen (90°)
-  arc(x1-R_mid, midY+R_mid, R_mid, 0, -Math.PI/2);
-
-  // 5. Courte droite vers l'intérieur
-  line(x1-R_mid, midY, midX+s*0.12+R_mid, midY);
-
-  // 6. Virage chicane : droite vers haut (S)
-  arc(midX+s*0.12+R_mid, midY-R_mid, R_mid, Math.PI/2, -Math.PI/2);
-  line(midX+s*0.12+R_mid*2, midY-R_mid, midX+s*0.12+R_mid*2, y0+R_mid);
-
-  // 7. Grand virage haut (180° large) — le demi-cercle du haut
-  const topCx = midX;
-  arc(topCx, y0+R_large, R_large, 0, Math.PI);
-
-  // 8. Droite descendante gauche
-  line(topCx-R_large, y0+R_large, x0+R_mid, midY-R_mid);
-
-  // 9. Virage milieu-gauche
-  arc(x0+R_mid, midY, R_mid, -Math.PI/2, Math.PI/2);
-
-  // 10. Droite bas-gauche
-  line(x0+R_mid*2, midY, x0+R_large, y1-R_large);
-
-  // 11. Grand virage bas-gauche (90°)
-  arc(x0+R_large, y1-R_large+R_large, R_large, -Math.PI/2, 0);
-
-  // 12. Retour ligne droite principale
-  line(x0+R_large*2, y1, startX, y1);
+  // 1. Ligne droite principale (bas)
+  line(x0+RL, y1,  x1-RE, y1);
+  // 2. Épingle bas-droite (180°)
+  arc (x1-RE, y1-RE,  RE,  Math.PI/2, -Math.PI/2);
+  // 3. Droite montante (droite)
+  line(x1, y1-RE,  x1, cy+RM);
+  // 4. Virage moyen haut-droite (90°)
+  arc (x1-RM, cy+RM,  RM,  0, -Math.PI/2);
+  // 5. Droite horizontale vers gauche (milieu haut-droite)
+  line(x1-RM, cy,  cx+RM+RM, cy);
+  // 6. Chicane — virage bas (arc droit)
+  arc (cx+RM+RM, cy-RM,  RM,  Math.PI/2, -Math.PI/2);
+  // 7. Droite courte
+  line(cx+RM*3, cy-RM,  cx+RM*3, y0+RL);
+  // 8. Grand demi-cercle haut (de droite à gauche)
+  arc (cx, y0+RL,  RL+RM,  0, Math.PI);
+  // 9. Droite descendante (gauche)
+  line(cx-RL-RM, y0+RL,  x0+RM, cy-RM);
+  // 10. Virage moyen gauche (90°)
+  arc (x0+RM, cy,  RM,  -Math.PI/2, Math.PI/2);
+  // 11. Droite vers le bas-gauche
+  line(x0+RM*2, cy,  x0+RL, y1-RL);
+  // 12. Virage bas-gauche (90°) — retour ligne droite
+  arc (x0+RL, y1-RL+RL,  RL,  -Math.PI/2, 0);
 
   return pts;
 }
@@ -1374,14 +1649,14 @@ function runGame(opts){
   }
   function nearestTP(x,y){
     let best=0,bd=Infinity;
-    // Chercher seulement autour (optimisation)
     for(let i=0;i<TN;i++){
       const d=Math.hypot(TRACK[i].x-x,TRACK[i].y-y);
       if(d<bd){bd=d;best=i;}
     }
     return best;
   }
-  function onTrack(x,y){ return distToTrack(x,y)<TW*.58; }
+  // Seuil large : la moitié de la largeur de piste + marge confortable
+  function onTrack(x,y){ return distToTrack(x,y)<TW*0.72; }
 
   // Couleurs joueurs multi
   const playerColors=['#c8ff00','#ff4444','#4488ff','#ff8800','#cc44ff'];
