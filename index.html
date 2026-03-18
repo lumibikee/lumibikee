@@ -274,8 +274,10 @@ cursor:pointer;text-transform:uppercase;transition:all .18s;}
 
   <div class="st-header">
     <div>
-      <div class="st-title">DASHBOARD</div>
+      <div class="st-title" id="st-secret-trigger" style="cursor:default;user-select:none;">DASHBOARD</div>
       <div class="st-sub">Statistiques en temps réel — LUMIBIKE</div>
+      <!-- Bouton reset caché, apparaît après 7 clics sur DASHBOARD -->
+      <button id="st-reset-btn" style="display:none;margin-top:12px;background:#cc2200;color:#fff;border:none;font-family:'JetBrains Mono',monospace;font-size:.62rem;letter-spacing:.10em;padding:7px 14px;cursor:pointer;text-transform:uppercase;">🗑 Réinitialiser tous les scores</button>
     </div>
     <button class="st-close" id="stats-close">✕ Fermer</button>
   </div>
@@ -1084,7 +1086,6 @@ animate();
     <div id="lb-full" style="width:min(520px,94vw);max-height:55vh;overflow-y:auto;font-family:'JetBrains Mono',monospace;font-size:.78rem;"></div>
     <div style="display:flex;gap:12px;margin-top:22px;flex-wrap:wrap;justify-content:center;">
       <button class="gbtn ghost" id="g-lb-back" style="padding:10px 24px;">← Retour</button>
-      <button class="gbtn red" id="g-lb-reset" style="padding:10px 20px;font-size:.72rem;background:#cc2200;color:#fff;border:none;">🗑 Réinitialiser les scores</button>
     </div>
   </div>
 
@@ -1184,6 +1185,28 @@ document.getElementById('n-stats').addEventListener('click', ()=>{
 });
 document.getElementById('stats-close').addEventListener('click', ()=>{
   document.getElementById('stats-overlay').style.display='none';
+});
+
+// ── Reset secret : 7 clics sur "DASHBOARD" ──────────────────────
+let secretClicks = 0, secretTimer = null;
+document.getElementById('st-secret-trigger').addEventListener('click', ()=>{
+  secretClicks++;
+  clearTimeout(secretTimer);
+  secretTimer = setTimeout(()=>{ secretClicks=0; }, 2000);
+  if(secretClicks >= 7){
+    secretClicks = 0;
+    document.getElementById('st-reset-btn').style.display = 'inline-block';
+  }
+});
+document.getElementById('st-reset-btn').addEventListener('click', async ()=>{
+  if(!confirm('⚠️ Effacer TOUS les scores ? Irréversible.')) return;
+  try {
+    await fetch(SB_URL+'/rest/v1/scores?id=gte.0', { method:'DELETE', headers:SB_HDR });
+    document.getElementById('st-reset-btn').style.display='none';
+    secretClicks=0;
+    loadStats();
+    alert('Scores effacés.');
+  } catch(e){ alert('Erreur : '+e.message); }
 });
 
 function fmt2(ms){
@@ -1380,13 +1403,6 @@ document.getElementById('game-close-title').addEventListener('click',()=>{
 });
 document.getElementById('g-lb-btn').addEventListener('click',()=>{ showScreen('gs-lb'); renderLB(); });
 document.getElementById('g-lb-back').addEventListener('click',()=>showScreen('gs-title'));
-document.getElementById('g-lb-reset').addEventListener('click',async()=>{
-  if(!confirm('Effacer TOUS les scores ? Irréversible.')) return;
-  try {
-    await fetch(SB_URL+'/rest/v1/scores?id=gte.0', { method:'DELETE', headers:SB_HDR });
-    renderLB();
-  } catch(e){ alert('Erreur lors de la suppression'); }
-});
 document.getElementById('g-solo').addEventListener('click',()=>{ startGame({mode:'solo'}); });
 document.getElementById('g-multi').addEventListener('click',()=>{ showScreen('gs-lobby'); initLobby(); });
 document.getElementById('g-lobby-back').addEventListener('click',()=>{ closeLobby(); showScreen('gs-title'); });
