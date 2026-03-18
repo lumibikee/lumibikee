@@ -1511,7 +1511,7 @@ function buildBigTrack(W,H){
 }
 
 // ── GAME ENGINE ───────────────────────────────────────────────────
-let GC,CTX,GAF,gameActive=false,gKeys={},gMobile={l:false,r:false,acc:false,boost:false,brake:false};
+let GC,CTX,GAF,gameActive=false,gKeys={},gMobile={l:false,r:false,acc:false,boost:false,brake:false,jsAngle:0,jsDist:0};
 let jsX=0,jsY=0; // joystick
 
 function startGame(opts){
@@ -1597,16 +1597,27 @@ window.addEventListener('keyup',  e=>gKeys[e.code]=false);
     const maxR=OUTER-INNER;
     const clamp=Math.min(dist,maxR);
     if(dist>0){ tx=CX+dx/dist*clamp; ty=CY+dy/dist*clamp; }
-    const ndx=dist>0?dx/dist*clamp/maxR:0;
-    const ndy=dist>0?dy/dist*clamp/maxR:0;
-    // ↑ haut = accélérer, ↓ bas = freiner, ← → = tourner
-    gMobile.l=ndx<-0.28;
-    gMobile.r=ndx>0.28;
-    gMobile.acc=ndy<-0.25;   // joystick vers le haut
-    gMobile.brake=ndy>0.40;  // joystick vers le bas
+
+    const ndist = clamp/maxR; // 0..1
+    const angle = dist>0 ? Math.atan2(dy,dx) : 0;
+
+    // Exposer l'angle absolu et la distance pour le player
+    gMobile.jsAngle = angle;
+    gMobile.jsDist  = ndist;
+
+    // Garder aussi les booléens pour compatibilité boost/brake
+    gMobile.acc   = dy < -10 && ndist > 0.2;
+    gMobile.brake = dy >  20 && ndist > 0.4;
+    gMobile.l     = false;
+    gMobile.r     = false;
     drawJS();
   }
-  function reset(){ tx=CX; ty=CY; active=false; gMobile.l=gMobile.r=gMobile.acc=gMobile.brake=false; drawJS(); }
+  function reset(){
+    tx=CX; ty=CY; active=false;
+    gMobile.l=gMobile.r=gMobile.acc=gMobile.brake=false;
+    gMobile.jsDist=0; gMobile.jsAngle=0;
+    drawJS();
+  }
 
   jc.addEventListener('touchstart',e=>{
     e.preventDefault(); active=true;
@@ -1898,29 +1909,45 @@ function runGame(opts){
   // ── Update joueur ─────────────────────────────────────────────
   function updatePlayer(dt){
     if(!started||player.finished)return;
-    const L=gKeys['ArrowLeft'] ||gKeys['KeyA']||gMobile.l;
-    const R=gKeys['ArrowRight']||gKeys['KeyD']||gMobile.r;
-    const A=gKeys['ArrowUp']   ||gKeys['KeyW']||gMobile.acc;
-    const B=gKeys['ArrowDown'] ||gKeys['KeyS']||gMobile.brake;
-    const bst=(gKeys['Space']||gMobile.boost)&&player.boost>=10;
 
-    // ── Physique réaliste ──────────────────────────────────────
-    const sp=Math.abs(player.speed)/player.maxSpeed;
+    const L  = gKeys['ArrowLeft'] ||gKeys['KeyA']||gMobile.l;
+    const R  = gKeys['ArrowRight']||gKeys['KeyD']||gMobile.r;
+    const A  = gKeys['ArrowUp']   ||gKeys['KeyW']||gMobile.acc;
+    const B  = gKeys['ArrowDown'] ||gKeys['KeyS']||gMobile.brake;
+    const bst= (gKeys['Space']||gMobile.boost)&&player.boost>=10;
 
-    // Direction — plus réactive à basse vitesse, progressif à haute
-    const turnFactor = 0.025 + sp*0.022;
-    if(L) player.angle -= turnFactor;
-    if(R) player.angle += turnFactor;
+    // ── Direction absolue (comme un jeu top-down) ─────────────
+    // L'angle du vélo suit directement la direction voulue
+    let targetAngle = player.angle; // par défaut on garde la direction
+    let hasDir = false;
 
-    // Accélération — seulement si touche enfoncée
-    if(A){
+    if(A && L){ targetAngle = -Math.PI*3/4; hasDir=true; }      // haut-gauche
+    else if(A && R){ targetAngle = -Math.PI/4; hasDir=true; }   // haut-droite
+    else if(B && L){ targetAngle = Math.PI*3/4; hasDir=true; }  // bas-gauche
+    else if(B && R){ targetAngle = Math.PI/4; hasDir=true; }    // bas-droite
+    else if(A){ targetAngle = -Math.PI/2; hasDir=true; }        // haut
+    else if(B){ targetAngle = Math.PI/2; hasDir=true; }         // bas
+    else if(L){ targetAngle = Math.PI; hasDir=true; }           // gauche
+    else if(R){ targetAngle = 0; hasDir=true; }                 // droite
+
+    // Joystick : angle absolu basé sur la position du stick
+    if(gMobile.jsAngle !== undefined && gMobile.jsDist > 0.25){
+      targetAngle = gMobile.jsAngle;
+      hasDir = true;
+    }
+
+    if(hasDir){
+      // Interpolation douce vers l'angle cible
+      let da = targetAngle - player.angle;
+      while(da > Math.PI) da -= Math.PI*2;
+      while(da < -Math.PI) da += Math.PI*2;
+      player.angle += da * 0.18;
+
+      // Accélérer dans la direction choisie
       player.speed = Math.min(player.maxSpeed, player.speed + player.accel);
-    } else if(B){
-      // Freinage net
-      player.speed = Math.max(0, player.speed - player.accel*3);
     } else {
-      // Friction forte : s'arrête rapidement sans touche
-      if(player.speed > 0.05) player.speed *= 0.88;
+      // Aucune touche : décélération rapide
+      if(player.speed > 0.05) player.speed *= 0.86;
       else player.speed = 0;
     }
 
@@ -1934,23 +1961,15 @@ function runGame(opts){
       player.boost = Math.min(100, player.boost + 0.3);
     }
 
-    // Léger glissement latéral (drift) à haute vitesse dans les virages
-    if(sp > 0.5 && (L || R)){
-      const driftAmount = sp * 0.008;
-      player.x += Math.cos(player.angle + Math.PI/2) * driftAmount * (L?-1:1);
-      player.y += Math.sin(player.angle + Math.PI/2) * driftAmount * (L?-1:1);
-    }
-
     const nx=player.x+Math.cos(player.angle)*player.speed;
     const ny=player.y+Math.sin(player.angle)*player.speed;
 
     if(onTrack(nx,ny)){
       player.x=nx;player.y=ny;player.offTrackTimer=0;
     } else {
-      player.speed*=.7;player.offTrackTimer+=dt;shake=5;
-      // Essayer seulement x ou seulement y
-      if(onTrack(nx,player.y)){player.x=nx;player.y=player.y;}
-      else if(onTrack(player.x,ny)){player.x=player.x;player.y=ny;}
+      player.speed*=.7;player.offTrackTimer+=dt;shake=4;
+      if(onTrack(nx,player.y)){player.x=nx;}
+      else if(onTrack(player.x,ny)){player.y=ny;}
     }
 
     // Boost zones
