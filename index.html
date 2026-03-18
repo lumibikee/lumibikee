@@ -975,13 +975,23 @@ animate();
 
 <canvas id="gameCanvas" style="width:100%;height:100%;display:none;touch-action:none;"></canvas>
 
-  <!-- Joystick mobile -->
+  <!-- Joystick mobile — gros et visible -->
 
-  <div id="g-mobile" style="position:absolute;bottom:0;left:0;width:100%;display:none;justify-content:space-between;padding:12px 18px 18px;pointer-events:none;z-index:6;">
-    <canvas id="joystick-canvas" width="120" height="120" style="pointer-events:all;border-radius:60px;opacity:.75;touch-action:none;"></canvas>
-    <div style="display:flex;flex-direction:column;gap:8px;pointer-events:all;align-items:flex-end;">
-      <button id="mb-boost" style="width:68px;height:68px;border-radius:50%;background:rgba(200,255,0,.18);border:2px solid #c8ff00;color:#c8ff00;font-size:.8rem;font-family:'JetBrains Mono',monospace;font-weight:700;">⚡BOOST</button>
-      <button id="mb-brake" style="width:54px;height:54px;border-radius:50%;background:rgba(4,10,6,.9);border:2px solid #442a14;color:#ff6622;font-size:.85rem;">⬛</button>
+  <div id="g-mobile" style="position:absolute;bottom:0;left:0;width:100%;display:none;justify-content:space-between;align-items:flex-end;padding:16px 24px 24px;pointer-events:none;z-index:6;">
+    <!-- Joystick gauche : direction + accélération -->
+    <div style="position:relative;pointer-events:all;">
+      <canvas id="joystick-canvas" width="160" height="160" style="pointer-events:all;touch-action:none;display:block;"></canvas>
+    </div>
+    <!-- Bouton boost droite -->
+    <div style="pointer-events:all;display:flex;flex-direction:column;align-items:center;gap:10px;">
+      <button id="mb-boost" style="
+        width:90px;height:90px;border-radius:50%;
+        background:rgba(200,255,0,0.22);
+        border:3px solid #c8ff00;
+        color:#c8ff00;font-size:.75rem;font-family:'JetBrains Mono',monospace;font-weight:900;
+        letter-spacing:.05em;line-height:1.2;
+        box-shadow:0 0 20px #aaff0055;
+        -webkit-tap-highlight-color:transparent;">⚡<br>BOOST</button>
     </div>
   </div>
 </div>
@@ -1142,52 +1152,77 @@ function renderLobbyPlayers(){
 function randomColor(){ const c=['#ff4444','#4488ff','#ff8800','#cc44ff'];return c[Math.floor(Math.random()*c.length)]; }
 function pName(){ return(document.getElementById('player-name').value||'Anonyme').trim().slice(0,14); }
 
-// ── PISTE — grande map avec BEAUCOUP de virages ───────────────────
+// ── PISTE ─────────────────────────────────────────────────────────
 function buildBigTrack(W,H){
-  // Circuit style F1 propre — boucle fermée, sens horaire
-  // 2 longues droites + épingle + virages larges + chicane
+  // Circuit fermé style karting/F1
+  // Construit arc par arc, referme exactement sur lui-même
   const pts=[];
   const cx=W/2, cy=H/2;
   const s=Math.min(W,H);
-  const hw=s*0.43, hh=s*0.30; // demi-dimensions
-  const xL=cx-hw, xR=cx+hw, yT=cy-hh, yB=cy+hh;
-  const rc=s*0.09;  // rayon virage coin
-  const re=s*0.055; // rayon épingle
-  const rch=s*0.05; // rayon chicane
+
+  // Marges pour rester dans l'écran
+  const mx=W*0.08, my=H*0.10;
+  const x0=mx, x1=W-mx, y0=my, y1=H-my;
+  const midX=cx, midY=cy;
 
   function arc(ox,oy,r,a1,a2){
-    const n=Math.max(8,Math.round(Math.abs(a2-a1)*r/5));
-    for(let i=0;i<=n;i++){
-      const a=a1+(a2-a1)*i/n;
-      pts.push({x:ox+Math.cos(a)*r,y:oy+Math.sin(a)*r});
+    const steps=Math.max(10,Math.round(Math.abs(a2-a1)*r/6));
+    for(let i=0;i<=steps;i++){
+      const a=a1+(a2-a1)*i/steps;
+      pts.push({x:ox+Math.cos(a)*r, y:oy+Math.sin(a)*r});
     }
   }
-  function seg(x1,y1,x2,y2){
-    const n=Math.max(5,Math.round(Math.hypot(x2-x1,y2-y1)/8));
+  function line(x1,y1,x2,y2){
+    const n=Math.max(6,Math.round(Math.hypot(x2-x1,y2-y1)/10));
     for(let i=1;i<=n;i++)
-      pts.push({x:x1+(x2-x1)*i/n,y:y1+(y2-y1)*i/n});
+      pts.push({x:x1+(x2-x1)*i/n, y:y1+(y2-y1)*i/n});
   }
 
-  // ── Ligne droite principale bas (START/FINISH) → droite
-  seg(xL+rc, yB, xR-re, yB);
-  // ── Épingle serrée bas-droite
-  arc(xR-re, yB-re, re, Math.PI/2, -Math.PI/2);
-  // ── Droite montante droite
-  seg(xR, yB-re, xR, yT+rc);
-  // ── Virage large haut-droite
-  arc(xR-rc, yT+rc, rc, 0, -Math.PI/2);
-  // ── Droite du haut (droite→gauche) avec chicane au centre
-  seg(xR-rc, yT, cx+rch*2+rch, yT);
-  // Chicane : deux demi-cercles vers le haut
-  arc(cx+rch*2, yT-rch, rch,  Math.PI/2, -Math.PI/2);
-  arc(cx,        yT-rch, rch, -Math.PI/2,  Math.PI/2);
-  seg(cx-rch, yT, xL+rc, yT);
-  // ── Virage large haut-gauche
-  arc(xL+rc, yT+rc, rc, -Math.PI/2, Math.PI);
-  // ── Droite descendante gauche
-  seg(xL, yT+rc, xL, yB-rc);
-  // ── Virage bas-gauche retour
-  arc(xL+rc, yB-rc, rc, Math.PI, Math.PI/2);
+  // Rayons des virages
+  const R_large = s*0.10;   // virage large
+  const R_mid   = s*0.07;   // virage moyen
+  const R_tight = s*0.045;  // virage serré
+  const R_hair  = s*0.035;  // épingle
+
+  // ─ SENS HORAIRE ─
+  // 1. Ligne droite principale (bas) : gauche → droite
+  const startX = x0 + R_large;
+  line(startX, y1, x1-R_hair, y1);
+
+  // 2. Épingle bas-droite (180° serrée)
+  arc(x1-R_hair, y1-R_hair, R_hair, Math.PI/2, -Math.PI/2);
+
+  // 3. Droite montante droite
+  line(x1, y1-R_hair, x1, midY+R_mid);
+
+  // 4. Virage haut-droite moyen (90°)
+  arc(x1-R_mid, midY+R_mid, R_mid, 0, -Math.PI/2);
+
+  // 5. Courte droite vers l'intérieur
+  line(x1-R_mid, midY, midX+s*0.12+R_mid, midY);
+
+  // 6. Virage chicane : droite vers haut (S)
+  arc(midX+s*0.12+R_mid, midY-R_mid, R_mid, Math.PI/2, -Math.PI/2);
+  line(midX+s*0.12+R_mid*2, midY-R_mid, midX+s*0.12+R_mid*2, y0+R_mid);
+
+  // 7. Grand virage haut (180° large) — le demi-cercle du haut
+  const topCx = midX;
+  arc(topCx, y0+R_large, R_large, 0, Math.PI);
+
+  // 8. Droite descendante gauche
+  line(topCx-R_large, y0+R_large, x0+R_mid, midY-R_mid);
+
+  // 9. Virage milieu-gauche
+  arc(x0+R_mid, midY, R_mid, -Math.PI/2, Math.PI/2);
+
+  // 10. Droite bas-gauche
+  line(x0+R_mid*2, midY, x0+R_large, y1-R_large);
+
+  // 11. Grand virage bas-gauche (90°)
+  arc(x0+R_large, y1-R_large+R_large, R_large, -Math.PI/2, 0);
+
+  // 12. Retour ligne droite principale
+  line(x0+R_large*2, y1, startX, y1);
 
   return pts;
 }
@@ -1233,56 +1268,81 @@ document.getElementById('hud-exit').addEventListener('click',()=>stopGame());
 window.addEventListener('keydown',e=>gKeys[e.code]=true);
 window.addEventListener('keyup',  e=>gKeys[e.code]=false);
 
-// ── Joystick mobile ───────────────────────────────────────────────
+// ── Joystick mobile — style manette ──────────────────────────────
 (function setupJoystick(){
   const jc=document.getElementById('joystick-canvas');
   if(!jc)return;
-  let active=false,ox=60,oy=60,cx2=60,cy2=60;
+  const W=160, H=160, CX=80, CY=80, OUTER=68, INNER=28;
+  let active=false, tx=CX, ty=CY;
+
   function drawJS(){
     const ctx=jc.getContext('2d');
-    ctx.clearRect(0,0,120,120);
-    ctx.beginPath();ctx.arc(60,60,54,0,Math.PI*2);
-    ctx.strokeStyle='#1e3a14';ctx.lineWidth=2;ctx.stroke();
-    ctx.fillStyle='rgba(200,255,0,0.04)';ctx.fill();
-    ctx.beginPath();ctx.arc(cx2,cy2,22,0,Math.PI*2);
-    ctx.fillStyle='rgba(200,255,0,0.3)';ctx.fill();
-    ctx.strokeStyle='#c8ff0088';ctx.lineWidth=2;ctx.stroke();
+    ctx.clearRect(0,0,W,H);
+
+    // Fond extérieur (cercle base)
+    ctx.beginPath(); ctx.arc(CX,CY,OUTER,0,Math.PI*2);
+    ctx.fillStyle='rgba(0,0,0,0.55)'; ctx.fill();
+    ctx.strokeStyle='#c8ff0066'; ctx.lineWidth=2.5; ctx.stroke();
+
+    // Croix directionnelle (repère visuel)
+    ctx.strokeStyle='#c8ff0022'; ctx.lineWidth=1.5;
+    ctx.beginPath(); ctx.moveTo(CX-OUTER+8,CY); ctx.lineTo(CX+OUTER-8,CY); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(CX,CY-OUTER+8); ctx.lineTo(CX,CY+OUTER-8); ctx.stroke();
+
+    // Flèche haut (accélérer)
+    ctx.fillStyle='#c8ff0044';
+    ctx.beginPath();
+    ctx.moveTo(CX,CY-OUTER+10); ctx.lineTo(CX-8,CY-OUTER+22); ctx.lineTo(CX+8,CY-OUTER+22);
+    ctx.closePath(); ctx.fill();
+
+    // Stick (cercle central mobile)
+    const grd=ctx.createRadialGradient(tx,ty,2,tx,ty,INNER);
+    grd.addColorStop(0,'rgba(220,255,100,0.95)');
+    grd.addColorStop(1,'rgba(140,200,0,0.75)');
+    ctx.beginPath(); ctx.arc(tx,ty,INNER,0,Math.PI*2);
+    ctx.fillStyle=grd; ctx.fill();
+    ctx.strokeStyle='#c8ff00'; ctx.lineWidth=2; ctx.stroke();
+
+    // Reflet sur le stick
+    ctx.beginPath(); ctx.arc(tx-6,ty-6,8,0,Math.PI*2);
+    ctx.fillStyle='rgba(255,255,255,0.25)'; ctx.fill();
   }
+
   function move(px,py){
-    const dx=px-ox,dy=py-oy,dist=Math.hypot(dx,dy),max=40;
-    const d=Math.min(dist,max);
-    cx2=ox+dx/dist*d;cy2=oy+dy/dist*d;
-    jsX=dx/max;jsY=dy/max;
-    gMobile.acc=jsY<-0.2;gMobile.brake=jsY>0.3;
-    gMobile.l=jsX<-0.2;gMobile.r=jsX>0.2;
+    const dx=px-CX, dy=py-CY;
+    const dist=Math.hypot(dx,dy);
+    const maxR=OUTER-INNER;
+    const clamp=Math.min(dist,maxR);
+    if(dist>0){ tx=CX+dx/dist*clamp; ty=CY+dy/dist*clamp; }
+    const nx=dist>0?dx/dist:0, ny=dist>0?dy/dist:0;
+    const ndx=clamp/maxR*nx, ndy=clamp/maxR*ny;
+    gMobile.l=ndx<-0.25; gMobile.r=ndx>0.25;
+    gMobile.acc=ndy<-0.2; gMobile.brake=ndy>0.35;
     drawJS();
   }
+  function reset(){ tx=CX; ty=CY; active=false; gMobile.l=gMobile.r=gMobile.acc=gMobile.brake=false; drawJS(); }
+
   jc.addEventListener('touchstart',e=>{
-    e.preventDefault();const t=e.touches[0],r=jc.getBoundingClientRect();
-    ox=t.clientX-r.left;oy=t.clientY-r.top;active=true;
+    e.preventDefault(); active=true;
+    const r=jc.getBoundingClientRect(), t=e.touches[0];
+    move(t.clientX-r.left, t.clientY-r.top);
   },{passive:false});
   jc.addEventListener('touchmove',e=>{
-    e.preventDefault();if(!active)return;
-    const t=e.touches[0],r=jc.getBoundingClientRect();
-    move(t.clientX-r.left,t.clientY-r.top);
+    e.preventDefault(); if(!active)return;
+    const r=jc.getBoundingClientRect(), t=e.touches[0];
+    move(t.clientX-r.left, t.clientY-r.top);
   },{passive:false});
-  jc.addEventListener('touchend',()=>{
-    active=false;cx2=60;cy2=60;jsX=0;jsY=0;
-    gMobile.acc=gMobile.brake=gMobile.l=gMobile.r=false;drawJS();
-  });
+  jc.addEventListener('touchend',reset);
+  jc.addEventListener('touchcancel',reset);
   drawJS();
 })();
 
-// ── Boutons mobiles boost/frein ───────────────────────────────────
+// ── Bouton boost ──────────────────────────────────────────────────
 const mbBoost=document.getElementById('mb-boost');
-const mbBrake=document.getElementById('mb-brake');
 if(mbBoost){
   mbBoost.addEventListener('touchstart',e=>{e.preventDefault();gMobile.boost=true;},{passive:false});
   mbBoost.addEventListener('touchend',()=>gMobile.boost=false);
-}
-if(mbBrake){
-  mbBrake.addEventListener('touchstart',e=>{e.preventDefault();gMobile.brake=true;},{passive:false});
-  mbBrake.addEventListener('touchend',()=>gMobile.brake=false);
+  mbBoost.addEventListener('touchcancel',()=>gMobile.boost=false);
 }
 
 // ── LOGIQUE DE COURSE ─────────────────────────────────────────────
@@ -1290,7 +1350,7 @@ function runGame(opts){
   const W=GC.width, H=GC.height;
   const TRACK=buildBigTrack(W,H);
   const TN=TRACK.length;
-  const TW=Math.min(W,H)*0.10; // largeur piste
+  const TW=Math.min(W,H)*0.085; // largeur piste — suffisante pour pas couper
   const LAPS=3;
 
   // Pré-calculer normales
@@ -1544,7 +1604,7 @@ function runGame(opts){
     const R=gKeys['ArrowRight']||gKeys['KeyD']||gMobile.r;
     const A=gKeys['ArrowUp']   ||gKeys['KeyW']||gMobile.acc;
     const B=gKeys['ArrowDown'] ||gKeys['KeyS']||gMobile.brake;
-    const bst=(gKeys['Space']||gMobile.boost)&&player.boost>0;
+    const bst=(gKeys['Space']||gMobile.boost)&&player.boost>=10;
 
     const sp=player.speed/player.maxSpeed;
     if(L) player.angle-=player.steer*(sp*.7+.3);
@@ -1552,11 +1612,17 @@ function runGame(opts){
     if(A) player.speed=Math.min(player.maxSpeed,player.speed+player.accel);
     else  player.speed*=player.friction;
     if(B) player.speed=Math.max(0,player.speed-player.accel*2.5);
+
     if(bst){
-      player.speed=Math.min(player.maxSpeed*1.5,player.speed+.18);
-      player.boost=Math.max(0,player.boost-1.5);player.boosting=true;
-    } else { player.boosting=false; }
-    if(!bst) player.boost=Math.min(100,player.boost+.18);
+      // Boost : vitesse max augmentée, jauge diminue
+      player.speed=Math.min(player.maxSpeed*1.55,player.speed+player.accel*1.5);
+      player.boost=Math.max(0,player.boost-0.8);
+      player.boosting=true;
+    } else {
+      player.boosting=false;
+      // Recharge rapide quand on n'utilise pas le boost
+      player.boost=Math.min(100,player.boost+0.35);
+    }
 
     const nx=player.x+Math.cos(player.angle)*player.speed;
     const ny=player.y+Math.sin(player.angle)*player.speed;
