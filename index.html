@@ -275,9 +275,6 @@ cursor:pointer;text-transform:uppercase;transition:all .18s;}
   <div class="st-header">
     <div>
       <div class="st-title" id="st-secret-trigger" style="cursor:default;user-select:none;">DASHBOARD</div>
-      <div class="st-sub">Statistiques en temps réel — LUMIBIKE</div>
-      <!-- Bouton reset caché, apparaît après 7 clics sur DASHBOARD -->
-      <button id="st-reset-btn" style="display:none;margin-top:12px;background:#cc2200;color:#fff;border:none;font-family:'JetBrains Mono',monospace;font-size:.62rem;letter-spacing:.10em;padding:7px 14px;cursor:pointer;text-transform:uppercase;">🗑 Réinitialiser tous les scores</button>
     </div>
     <button class="st-close" id="stats-close">✕ Fermer</button>
   </div>
@@ -381,6 +378,9 @@ cursor:pointer;text-transform:uppercase;transition:all .18s;}
 
   <div style="text-align:center;padding:20px 40px 40px;font-size:.58rem;color:#1e3a14;letter-spacing:.10em;">
     LUMIBIKE · N Sigma Pi · Données mises à jour en temps réel via Supabase
+    <span style="margin-left:16px;">
+      <button id="st-reset-btn" style="background:none;border:1px solid #1a2a18;color:#1a2a18;font-family:'JetBrains Mono',monospace;font-size:.50rem;padding:3px 7px;cursor:pointer;letter-spacing:.08em;">v1.0</button>
+    </span>
   </div>
 </div>
 <div id="zpanel">
@@ -1188,25 +1188,14 @@ document.getElementById('stats-close').addEventListener('click', ()=>{
 });
 
 // ── Reset secret : 7 clics sur "DASHBOARD" ──────────────────────
-let secretClicks = 0, secretTimer = null;
-document.getElementById('st-secret-trigger').addEventListener('click', ()=>{
-  secretClicks++;
-  clearTimeout(secretTimer);
-  secretTimer = setTimeout(()=>{ secretClicks=0; }, 2000);
-  if(secretClicks >= 7){
-    secretClicks = 0;
-    document.getElementById('st-reset-btn').style.display = 'inline-block';
-  }
-});
+// ── Reset secret : bouton "v1.0" discret dans le footer des Stats ──
 document.getElementById('st-reset-btn').addEventListener('click', async ()=>{
-  if(!confirm('⚠️ Effacer TOUS les scores ? Irréversible.')) return;
+  if(!confirm('⚠️ Effacer TOUS les scores du classement ? Irréversible.')) return;
   try {
     await fetch(SB_URL+'/rest/v1/scores?id=gte.0', { method:'DELETE', headers:SB_HDR });
-    document.getElementById('st-reset-btn').style.display='none';
-    secretClicks=0;
     loadStats();
-    alert('Scores effacés.');
-  } catch(e){ alert('Erreur : '+e.message); }
+    alert('✓ Scores effacés.');
+  } catch(e){ alert('Erreur réseau.'); }
 });
 
 function fmt2(ms){
