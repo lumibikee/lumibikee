@@ -995,49 +995,77 @@ animate();
 //  Map grande avec beaucoup de virages
 // ════════════════════════════════════════════════════════════════
 
-// ── Leaderboard localStorage ──────────────────────────────────────
-const LSKEY = 'lumibike_gp_v3';
-function getScores(){ try{ return JSON.parse(localStorage.getItem(LSKEY)||'[]'); }catch(e){ return []; } }
-function saveScore(name,bestLap,totalTime){
-  const sc=getScores();
-  sc.push({
-    name:(name||'Anonyme').trim().slice(0,14),
-    lap:bestLap,
-    total:totalTime,
-    date:new Date().toLocaleDateString('fr-FR')
-  });
-  sc.sort((a,b)=>a.lap-b.lap); // trié par meilleur tour
-  localStorage.setItem(LSKEY,JSON.stringify(sc.slice(0,20)));
+// ── Supabase — Classement mondial ────────────────────────────────
+const SB_URL = 'https://ujprdxwosjnfrvvidryf.supabase.co';
+const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVqcHJkeHdvc2puZnJ2dmlkcnlmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM4MzA0MzMsImV4cCI6MjA4OTQwNjQzM30.9V24EUho-2QVsdv0rvyY2udY9enatZTNkXCj2Siw0lo';
+const SB_HDR = { 'Content-Type':'application/json', 'apikey':SB_KEY, 'Authorization':'Bearer '+SB_KEY };
+
+async function saveScore(name, bestLap, totalTime){
+  try {
+    await fetch(SB_URL+'/rest/v1/scores', {
+      method:'POST',
+      headers:{...SB_HDR, 'Prefer':'return=minimal'},
+      body: JSON.stringify({
+        name: (name||'Anonyme').trim().slice(0,14),
+        best_lap: bestLap,
+        total_time: totalTime
+      })
+    });
+  } catch(e){ console.warn('Supabase save failed', e); }
 }
+
+async function getScores(){
+  try {
+    const r = await fetch(
+      SB_URL+'/rest/v1/scores?select=name,best_lap,total_time,created_at&order=best_lap.asc&limit=20',
+      { headers: SB_HDR }
+    );
+    return await r.json();
+  } catch(e){ return []; }
+}
+
+async function deleteAllScores(){
+  try {
+    await fetch(SB_URL+'/rest/v1/scores?id=gte.0', {
+      method:'DELETE', headers: SB_HDR
+    });
+  } catch(e){ console.warn('Delete failed',e); }
+}
+
 function fmt(ms){
-  if(!ms||ms===Infinity)return'--:--.--';
+  if(!ms||ms===Infinity||ms<=0)return'--:--.--';
   return`${Math.floor(ms/60000)}:${String(Math.floor((ms%60000)/1000)).padStart(2,'0')}.${String(Math.floor((ms%1000)/10)).padStart(2,'0')}`;
 }
-function refreshTitle(){
-  const sc=getScores();
-  document.getElementById('g-best-disp').textContent=sc.length?fmt(sc[0].lap):'--:--.--';
+
+async function refreshTitle(){
+  const sc = await getScores();
+  const best = sc.length ? sc[0].best_lap : null;
+  document.getElementById('g-best-disp').textContent = best ? fmt(best) : '--:--.--';
 }
-function renderLB(){
-  const sc=getScores(),el=document.getElementById('lb-full');
+
+async function renderLB(){
+  const el = document.getElementById('lb-full');
+  el.innerHTML = '<div style="color:#4a7a30;text-align:center;padding:24px;">Chargement...</div>';
+  const sc = await getScores();
   if(!sc.length){
     el.innerHTML='<div style="color:#4a7a30;text-align:center;padding:24px;">Aucun score encore<br><span style="font-size:.7rem;">Termine une course pour apparaître ici !</span></div>';
     return;
   }
   const medals=['🥇','🥈','🥉'];
   el.innerHTML=`
-    <div style="display:grid;grid-template-columns:28px 1fr auto auto;gap:5px 12px;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid #1e3a14;">
+    <div style="display:grid;grid-template-columns:28px 1fr auto auto;gap:5px 12px;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid #1e3a14;font-family:'JetBrains Mono',monospace;">
       <span style="color:#4a7a30;font-size:.55rem;letter-spacing:.12em;">POS</span>
       <span style="color:#4a7a30;font-size:.55rem;letter-spacing:.12em;">NOM</span>
       <span style="color:#4a7a30;font-size:.55rem;letter-spacing:.12em;">MEILLEUR TOUR</span>
-      <span style="color:#4a7a30;font-size:.55rem;letter-spacing:.12em;">TOTAL (3 tours)</span>
+      <span style="color:#4a7a30;font-size:.55rem;letter-spacing:.12em;">TOTAL 3 TOURS</span>
     </div>
     ${sc.map((s,i)=>{
       const col=i===0?'#c8ff00':i<3?'#88cc44':'#7aaa00';
-      return`<div style="display:grid;grid-template-columns:28px 1fr auto auto;gap:5px 12px;align-items:center;padding:6px 0;border-bottom:1px solid #0e200e;color:${col}">
+      return`<div style="display:grid;grid-template-columns:28px 1fr auto auto;gap:5px 12px;align-items:center;padding:6px 0;border-bottom:1px solid #0e200e;color:${col};font-family:'JetBrains Mono',monospace;">
         <span style="font-weight:700">${medals[i]||i+1}</span>
         <span style="font-weight:${i<3?700:400};overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${s.name}</span>
-        <span style="font-variant-numeric:tabular-nums;font-size:.85rem">${fmt(s.lap)}</span>
-        <span style="font-variant-numeric:tabular-nums;font-size:.85rem;color:${i===0?'#88cc44':'#4a7a30'}">${fmt(s.total)}</span>
+        <span style="font-variant-numeric:tabular-nums;font-size:.85rem">${fmt(s.best_lap)}</span>
+        <span style="font-variant-numeric:tabular-nums;font-size:.85rem;color:${i===0?'#88cc44':'#4a7a30'}">${fmt(s.total_time)}</span>
       </div>`;
     }).join('')}`;
 }
@@ -1052,11 +1080,12 @@ document.getElementById('game-close-title').addEventListener('click',()=>{
   document.getElementById('game-overlay').style.display='none';
   stopGame();
 });
-document.getElementById('g-lb-btn').addEventListener('click',()=>{ renderLB(); showScreen('gs-lb'); });
+document.getElementById('g-lb-btn').addEventListener('click',()=>{ showScreen('gs-lb'); renderLB(); });
 document.getElementById('g-lb-back').addEventListener('click',()=>showScreen('gs-title'));
-document.getElementById('g-lb-reset').addEventListener('click',()=>{
-  if(confirm('Effacer tous les scores ? Cette action est irréversible.')){
-    localStorage.removeItem(LSKEY);
+document.getElementById('g-lb-reset').addEventListener('click',async()=>{
+  if(confirm('Effacer TOUS les scores du classement mondial ? Cette action est irréversible.')){
+    document.getElementById('lb-full').innerHTML='<div style="color:#4a7a30;text-align:center;padding:16px;">Suppression...</div>';
+    await deleteAllScores();
     renderLB();
   }
 });
@@ -1648,9 +1677,7 @@ function runGame(opts){
           <span style="color:#4a7a30">${e.best<Infinity?fmt(e.best):'--'}</span>
         </div>`).join('');
 
-      // Aussi mettre à jour le classement global (localStorage) visible sur l'écran titre
-      const sc=getScores();
-      // déjà géré à la fin de course
+      // Aussi mettre à jour le classement global visible sur l'écran titre (async, pas bloquant)
     }
   }
 
