@@ -1084,6 +1084,7 @@ animate();
     <div id="lb-full" style="width:min(520px,94vw);max-height:55vh;overflow-y:auto;font-family:'JetBrains Mono',monospace;font-size:.78rem;"></div>
     <div style="display:flex;gap:12px;margin-top:22px;flex-wrap:wrap;justify-content:center;">
       <button class="gbtn ghost" id="g-lb-back" style="padding:10px 24px;">← Retour</button>
+      <button class="gbtn red" id="g-lb-reset" style="padding:10px 20px;font-size:.72rem;background:#cc2200;color:#fff;border:none;">🗑 Réinitialiser les scores</button>
     </div>
   </div>
 
@@ -1379,6 +1380,13 @@ document.getElementById('game-close-title').addEventListener('click',()=>{
 });
 document.getElementById('g-lb-btn').addEventListener('click',()=>{ showScreen('gs-lb'); renderLB(); });
 document.getElementById('g-lb-back').addEventListener('click',()=>showScreen('gs-title'));
+document.getElementById('g-lb-reset').addEventListener('click',async()=>{
+  if(!confirm('Effacer TOUS les scores ? Irréversible.')) return;
+  try {
+    await fetch(SB_URL+'/rest/v1/scores?id=gte.0', { method:'DELETE', headers:SB_HDR });
+    renderLB();
+  } catch(e){ alert('Erreur lors de la suppression'); }
+});
 document.getElementById('g-solo').addEventListener('click',()=>{ startGame({mode:'solo'}); });
 document.getElementById('g-multi').addEventListener('click',()=>{ showScreen('gs-lobby'); initLobby(); });
 document.getElementById('g-lobby-back').addEventListener('click',()=>{ closeLobby(); showScreen('gs-title'); });
@@ -1660,16 +1668,20 @@ function runGame(opts){
   const playerColors=['#c8ff00','#ff4444','#4488ff','#ff8800','#cc44ff'];
   const multiPlayers=opts.players||[];
 
-  // ── Créer le joueur ───────────────────────────────────────────
-  const spawn0=TRACK[0];
+  // ── Index de la ligne d'arrivée : milieu de la ligne droite principale ──
+  // La droite principale fait ~1/6 du total des points, on prend le 1/3
+  const FINISH_IDX = Math.floor(TN * 0.06);
+  const spawn0 = TRACK[FINISH_IDX];
+
   const player={
     x:spawn0.x, y:spawn0.y,
-    angle:Math.atan2(TRACK[1].y-spawn0.y,TRACK[1].x-spawn0.x),
+    angle:Math.atan2(TRACK[FINISH_IDX+1].y-spawn0.y, TRACK[FINISH_IDX+1].x-spawn0.x),
     speed:0, maxSpeed:3.2, accel:0.10, friction:0.94,
     steer:0.042, boost:100, boosting:false,
-    lap:1, cp:0, cpFrac:0, lapStart:null, bestLap:Infinity, lastLap:null,
+    lap:1, cp:FINISH_IDX, cpFrac:FINISH_IDX,
+    lapStart:null, bestLap:Infinity, lastLap:null,
     finished:false, trail:[], name:pName(), color:'#c8ff00',
-    offTrackTimer:0
+    offTrackTimer:0, crossedStart:false
   };
 
   // ── IA / joueurs multi ────────────────────────────────────────
@@ -1777,21 +1789,29 @@ function runGame(opts){
     for(let i=1;i<TN;i++) CTX.lineTo(TRACK[i].x,TRACK[i].y);
     CTX.closePath();CTX.stroke();CTX.setLineDash([]);
 
-    // Ligne start/finish (perpendiculaire à la piste en pt 0)
-    const dx=TRACK[1].x-TRACK[TN-1].x, dy=TRACK[1].y-TRACK[TN-1].y;
-    const len=Math.hypot(dx,dy)||1;
-    const nx=-dy/len, ny=dx/len;
+    // Ligne start/finish au bon endroit (FINISH_IDX)
+    const fi=FINISH_IDX;
+    const fdx=TRACK[(fi+1)%TN].x-TRACK[(fi-1+TN)%TN].x;
+    const fdy=TRACK[(fi+1)%TN].y-TRACK[(fi-1+TN)%TN].y;
+    const flen=Math.hypot(fdx,fdy)||1;
+    const fnx=-fdy/flen, fny=fdx/flen;
     const hw=TW*.5;
     for(let k=0;k<8;k++){
       CTX.fillStyle=k%2===0?'#fff':'#cc0000';
       const f1=(-hw+hw*2*k/8), f2=(-hw+hw*2*(k+1)/8);
       CTX.beginPath();
-      CTX.moveTo(TRACK[0].x+nx*f1,TRACK[0].y+ny*f1);
-      CTX.lineTo(TRACK[0].x+nx*f2,TRACK[0].y+ny*f2);
-      CTX.lineTo(TRACK[0].x+nx*f2+dx/len*8,TRACK[0].y+ny*f2+dy/len*8);
-      CTX.lineTo(TRACK[0].x+nx*f1+dx/len*8,TRACK[0].y+ny*f1+dy/len*8);
+      CTX.moveTo(TRACK[fi].x+fnx*f1, TRACK[fi].y+fny*f1);
+      CTX.lineTo(TRACK[fi].x+fnx*f2, TRACK[fi].y+fny*f2);
+      CTX.lineTo(TRACK[fi].x+fnx*f2+fdx/flen*10, TRACK[fi].y+fny*f2+fdy/flen*10);
+      CTX.lineTo(TRACK[fi].x+fnx*f1+fdx/flen*10, TRACK[fi].y+fny*f1+fdy/flen*10);
       CTX.closePath();CTX.fill();
     }
+    // Texte START/FINISH
+    CTX.fillStyle='#c8ff00cc';
+    CTX.font=`bold ${TW*.18}px JetBrains Mono,monospace`;
+    CTX.textAlign='center';
+    CTX.fillText('START', TRACK[fi].x+fnx*(hw+TW*.25), TRACK[fi].y+fny*(hw+TW*.25)+TW*.07);
+    CTX.textAlign='left';
 
     // Numéros virages
     [25,50,75,100,125,150,175].forEach((ci,i)=>{
@@ -1946,21 +1966,31 @@ function runGame(opts){
     const fwd=((cp-player.cp+TN)%TN);
     if(fwd>0&&fwd<TN/2){player.cpFrac+=fwd;player.cp=cp;}
 
-    if(player.cpFrac>=TN){
-      player.cpFrac-=TN;
-      const lt=Date.now()-player.lapStart;
-      if(player.lap>1&&lt<player.bestLap){
-        player.bestLap=lt;showMsg('🏆 MEILLEUR TOUR !',2000);spark(player.x,player.y,'#c8ff00',20);
-      }
-      player.lapStart=Date.now();player.lap++;
-      if(player.lap>LAPS){
-        player.finished=true;
-        // Figer les IA à leur progression actuelle pour le classement
-        rivals.forEach(r=>{ r.frozenFrac=(r.lap-1)*TN+r.cpFrac; });
-        saveScore(player.name, player.bestLap===Infinity?raceTime:player.bestLap, raceTime);
-        showMsg('🏁 ARRIVÉE !',99999);
+    // Passage sur la ligne d'arrivée
+    // On détecte quand cpFrac dépasse FINISH_IDX + TN (un tour complet depuis le spawn)
+    const lapThreshold = FINISH_IDX + TN;
+    if(player.cpFrac >= lapThreshold){
+      player.cpFrac -= TN;
+      if(!player.crossedStart){
+        // Premier passage = fin du 1er tour, on commence à chronomètrer
+        player.crossedStart = true;
+        player.lapStart = Date.now();
+        player.lap = 1;
+        showMsg('Tour 1 / '+LAPS, 1000);
       } else {
-        showMsg(`Tour ${player.lap-1}/${LAPS}`,1200);spark(player.x,player.y,'#c8ff00',10);
+        const lt = Date.now() - player.lapStart;
+        if(lt < player.bestLap){ player.bestLap=lt; showMsg('🏆 MEILLEUR TOUR !',2000); spark(player.x,player.y,'#c8ff00',20); }
+        player.lapStart = Date.now();
+        player.lap++;
+        if(player.lap > LAPS){
+          player.finished=true;
+          rivals.forEach(r=>{ r.frozenFrac=(r.lap-1)*TN+r.cpFrac; });
+          saveScore(player.name, player.bestLap===Infinity?raceTime:player.bestLap, raceTime);
+          showMsg('🏁 ARRIVÉE !',99999);
+        } else {
+          showMsg(`Tour ${player.lap} / ${LAPS}`, 1200);
+          spark(player.x,player.y,'#c8ff00',10);
+        }
       }
     }
 
