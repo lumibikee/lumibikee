@@ -939,7 +939,6 @@ animate();
     <div id="lb-full" style="width:min(520px,94vw);max-height:55vh;overflow-y:auto;font-family:'JetBrains Mono',monospace;font-size:.78rem;"></div>
     <div style="display:flex;gap:12px;margin-top:22px;flex-wrap:wrap;justify-content:center;">
       <button class="gbtn ghost" id="g-lb-back" style="padding:10px 24px;">← Retour</button>
-      <button class="gbtn red" id="g-lb-reset" style="padding:10px 20px;font-size:.72rem;">🗑 Réinitialiser les scores</button>
     </div>
   </div>
 
@@ -1082,13 +1081,6 @@ document.getElementById('game-close-title').addEventListener('click',()=>{
 });
 document.getElementById('g-lb-btn').addEventListener('click',()=>{ showScreen('gs-lb'); renderLB(); });
 document.getElementById('g-lb-back').addEventListener('click',()=>showScreen('gs-title'));
-document.getElementById('g-lb-reset').addEventListener('click',async()=>{
-  if(confirm('Effacer TOUS les scores du classement mondial ? Cette action est irréversible.')){
-    document.getElementById('lb-full').innerHTML='<div style="color:#4a7a30;text-align:center;padding:16px;">Suppression...</div>';
-    await deleteAllScores();
-    renderLB();
-  }
-});
 document.getElementById('g-solo').addEventListener('click',()=>{ startGame({mode:'solo'}); });
 document.getElementById('g-multi').addEventListener('click',()=>{ showScreen('gs-lobby'); initLobby(); });
 document.getElementById('g-lobby-back').addEventListener('click',()=>{ closeLobby(); showScreen('gs-title'); });
@@ -1230,6 +1222,7 @@ function stopGame(){
   if(gc)gc.style.display='none';
   document.getElementById('g-hud').style.display='none';
   document.getElementById('g-mobile').style.display='none';
+  const fb=document.getElementById('finish-exit'); if(fb)fb.remove();
   closeLobby();
   showScreen('gs-title');
   refreshTitle();
@@ -1602,8 +1595,10 @@ function runGame(opts){
         player.bestLap=lt;showMsg('🏆 MEILLEUR TOUR !',2000);spark(player.x,player.y,'#c8ff00',20);
       }
       player.lapStart=Date.now();player.lap++;
-      if(player.lap>LAPS+1){
+      if(player.lap>LAPS){
         player.finished=true;
+        // Figer les IA à leur progression actuelle pour le classement
+        rivals.forEach(r=>{ r.frozenFrac=(r.lap-1)*TN+r.cpFrac; });
         saveScore(player.name, player.bestLap===Infinity?raceTime:player.bestLap, raceTime);
         showMsg('🏁 ARRIVÉE !',99999);
       } else {
@@ -1641,7 +1636,10 @@ function runGame(opts){
   const posStr=['','1er 🥇','2ème','3ème','4ème','5ème','6ème'];
   function getPos(){
     const pp=(player.lap-1)*TN+player.cpFrac;
-    return 1+rivals.filter(r=>(r.lap-1)*TN+r.cpFrac>pp).length;
+    return 1+rivals.filter(r=>{
+      const rp = player.finished && r.frozenFrac!==undefined ? r.frozenFrac : (r.lap-1)*TN+r.cpFrac;
+      return rp>pp;
+    }).length;
   }
 
   // ── HUD ───────────────────────────────────────────────────────
@@ -1742,7 +1740,8 @@ function runGame(opts){
       cdT+=dt;if(cdT>=1000){cdT=0;cd--;}
       if(cd<=0){started=true;player.lapStart=Date.now();}
     } else {
-      raceTime+=dt;updateBoost(dt);
+      if(!player.finished) raceTime+=dt;
+      updateBoost(dt);
     }
 
     CTX.save();CTX.translate(shakeX,shakeY);
@@ -1826,13 +1825,30 @@ function runGame(opts){
       CTX.font=`${fs*.018}px JetBrains Mono,monospace`;
       CTX.fillText('Appuie sur R ou tape pour rejouer',W/2,H/2+fs*.18);
       CTX.textAlign='left';
+
+      // Afficher le bouton quitter HTML par dessus (une seule fois)
+      if(!document.getElementById('finish-exit')){
+        const btn=document.createElement('button');
+        btn.id='finish-exit';
+        btn.textContent='✕ QUITTER';
+        btn.style.cssText=`position:fixed;bottom:32px;left:50%;transform:translateX(-50%);
+          background:#c8ff00;color:#040a06;border:none;
+          font-family:'JetBrains Mono',monospace;font-size:1.1rem;font-weight:900;
+          letter-spacing:.18em;padding:16px 48px;cursor:pointer;z-index:400;
+          text-transform:uppercase;box-shadow:0 0 30px #aaff0066;`;
+        btn.onclick=()=>{ btn.remove(); stopGame(); };
+        document.body.appendChild(btn);
+      }
     }
 
     updateHUD();drawMinimap();
   }
 
   // Rejouer
-  function doReplay(){ stopGame();setTimeout(()=>startGame(opts),60); }
+  function doReplay(){
+    const b=document.getElementById('finish-exit'); if(b)b.remove();
+    stopGame();setTimeout(()=>startGame(opts),60);
+  }
   window.addEventListener('keydown',function rh(e){ if(e.code==='KeyR'&&player.finished){window.removeEventListener('keydown',rh);doReplay();}});
   GC.addEventListener('click',()=>{ if(player.finished)doReplay(); });
   GC.addEventListener('touchend',()=>{ if(player.finished)doReplay(); });
