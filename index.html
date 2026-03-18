@@ -1445,59 +1445,54 @@ function buildBigTrack(W,H){
   const pts=[];
   const cx=W/2, cy=H/2;
   const s=Math.min(W,H);
-
-  const mx=W*0.07, my=H*0.09;
-  const x0=mx, x1=W-mx, y0=my, y1=H-my;
-
-  // Pas très petit pour éviter les gaps (point tous les ~5px)
-  const STEP=5;
+  const STEP=4; // un point tous les ~4px → pas de gap
 
   function arc(ox,oy,r,a1,a2){
-    const len=Math.abs(a2-a1)*r;
-    const n=Math.max(12,Math.round(len/STEP));
+    const n=Math.max(16,Math.round(Math.abs(a2-a1)*r/STEP));
     for(let i=0;i<=n;i++){
       const a=a1+(a2-a1)*i/n;
       pts.push({x:ox+Math.cos(a)*r, y:oy+Math.sin(a)*r});
     }
   }
-  function line(x1,y1,x2,y2){
-    const len=Math.hypot(x2-x1,y2-y1);
-    const n=Math.max(8,Math.round(len/STEP));
+  function seg(x1,y1,x2,y2){
+    const n=Math.max(8,Math.round(Math.hypot(x2-x1,y2-y1)/STEP));
     for(let i=1;i<=n;i++)
       pts.push({x:x1+(x2-x1)*i/n, y:y1+(y2-y1)*i/n});
   }
 
-  const RL = s*0.09;   // virage large (coins)
-  const RM = s*0.065;  // virage moyen
-  const RE = s*0.038;  // épingle serrée
+  // Marges confortables
+  const L=W*0.08, R=W*0.92, T=H*0.10, B=H*0.90;
+  const RL=s*0.09, RM=s*0.065, RE=s*0.040;
 
-  // ── Circuit en sens horaire ──────────────────────────────────
-  // Départ : bas-gauche, ligne droite principale vers la droite
+  // ── Sens horaire, circuit fermé ───────────────────────────
+  // Pt 0 = début ligne droite principale (bas-gauche)
 
-  // 1. Ligne droite principale (bas)
-  line(x0+RL, y1,  x1-RE, y1);
-  // 2. Épingle bas-droite (180°)
-  arc (x1-RE, y1-RE,  RE,  Math.PI/2, -Math.PI/2);
-  // 3. Droite montante (droite)
-  line(x1, y1-RE,  x1, cy+RM);
-  // 4. Virage moyen haut-droite (90°)
-  arc (x1-RM, cy+RM,  RM,  0, -Math.PI/2);
-  // 5. Droite horizontale vers gauche (milieu haut-droite)
-  line(x1-RM, cy,  cx+RM+RM, cy);
-  // 6. Chicane — virage bas (arc droit)
-  arc (cx+RM+RM, cy-RM,  RM,  Math.PI/2, -Math.PI/2);
-  // 7. Droite courte
-  line(cx+RM*3, cy-RM,  cx+RM*3, y0+RL);
-  // 8. Grand demi-cercle haut (de droite à gauche)
-  arc (cx, y0+RL,  RL+RM,  0, Math.PI);
-  // 9. Droite descendante (gauche)
-  line(cx-RL-RM, y0+RL,  x0+RM, cy-RM);
-  // 10. Virage moyen gauche (90°)
-  arc (x0+RM, cy,  RM,  -Math.PI/2, Math.PI/2);
-  // 11. Droite vers le bas-gauche
-  line(x0+RM*2, cy,  x0+RL, y1-RL);
-  // 12. Virage bas-gauche (90°) — retour ligne droite
-  arc (x0+RL, y1-RL+RL,  RL,  -Math.PI/2, 0);
+  // 1. Ligne droite principale (bas, gauche→droite)
+  seg(L+RL, B,   R-RE, B);
+  // 2. Épingle bas-droite
+  arc(R-RE, B-RE,  RE,  Math.PI/2, -Math.PI/2);
+  // 3. Montée droite
+  seg(R, B-RE,   R, cy+RM);
+  // 4. Virage haut-droite (90°)
+  arc(R-RM, cy+RM,  RM,  0, -Math.PI/2);
+  // 5. Droite milieu vers centre
+  seg(R-RM, cy,   cx+RM*2+RM, cy);
+  // 6. Virage chicane (S haut)
+  arc(cx+RM*2+RM, cy-RM,  RM,  Math.PI/2, -Math.PI/2);
+  seg(cx+RM*4, cy-RM,   cx+RM*4, T+RL);
+  // 7. Grand demi-cercle du haut (droite→gauche)
+  arc(cx, T+RL,  RL+RM,  0, Math.PI);
+  // 8. Descente gauche
+  seg(cx-RL-RM, T+RL,   L+RM, cy-RM);
+  // 9. Virage moyen gauche
+  arc(L+RM, cy,  RM,  -Math.PI/2, Math.PI/2);
+  // 10. Droite bas-gauche
+  seg(L+RM*2, cy,   L+RL, B-RL);
+  // 11. Virage bas-gauche (90°) — ferme sur pt 0
+  arc(L+RL, B-RL+RL,  RL,  -Math.PI/2, 0);
+  // Le dernier arc doit atterrir exactement sur L+RL, B
+  // On force le dernier point
+  pts[pts.length-1]={x:L+RL, y:B};
 
   return pts;
 }
@@ -1509,7 +1504,7 @@ let jsX=0,jsY=0; // joystick
 function startGame(opts){
   showScreen('__none__');
   document.getElementById('g-hud').style.display='block';
-  const isMob=/Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
+  const isMob = ('ontouchstart' in window) || navigator.maxTouchPoints>0;
   document.getElementById('g-mobile').style.display=isMob?'flex':'none';
 
   GC=document.getElementById('gameCanvas');
@@ -1589,10 +1584,13 @@ window.addEventListener('keyup',  e=>gKeys[e.code]=false);
     const maxR=OUTER-INNER;
     const clamp=Math.min(dist,maxR);
     if(dist>0){ tx=CX+dx/dist*clamp; ty=CY+dy/dist*clamp; }
-    const nx=dist>0?dx/dist:0, ny=dist>0?dy/dist:0;
-    const ndx=clamp/maxR*nx, ndy=clamp/maxR*ny;
-    gMobile.l=ndx<-0.25; gMobile.r=ndx>0.25;
-    gMobile.acc=ndy<-0.2; gMobile.brake=ndy>0.35;
+    const ndx=dist>0?dx/dist*clamp/maxR:0;
+    const ndy=dist>0?dy/dist*clamp/maxR:0;
+    // ↑ haut = accélérer, ↓ bas = freiner, ← → = tourner
+    gMobile.l=ndx<-0.28;
+    gMobile.r=ndx>0.28;
+    gMobile.acc=ndy<-0.25;   // joystick vers le haut
+    gMobile.brake=ndy>0.40;  // joystick vers le bas
     drawJS();
   }
   function reset(){ tx=CX; ty=CY; active=false; gMobile.l=gMobile.r=gMobile.acc=gMobile.brake=false; drawJS(); }
@@ -1881,22 +1879,41 @@ function runGame(opts){
     const B=gKeys['ArrowDown'] ||gKeys['KeyS']||gMobile.brake;
     const bst=(gKeys['Space']||gMobile.boost)&&player.boost>=10;
 
-    const sp=player.speed/player.maxSpeed;
-    if(L) player.angle-=player.steer*(sp*.7+.3);
-    if(R) player.angle+=player.steer*(sp*.7+.3);
-    if(A) player.speed=Math.min(player.maxSpeed,player.speed+player.accel);
-    else  player.speed*=player.friction;
-    if(B) player.speed=Math.max(0,player.speed-player.accel*2.5);
+    // ── Physique réaliste ──────────────────────────────────────
+    const sp=Math.abs(player.speed)/player.maxSpeed;
 
-    if(bst){
-      // Boost : vitesse max augmentée, jauge diminue
-      player.speed=Math.min(player.maxSpeed*1.55,player.speed+player.accel*1.5);
-      player.boost=Math.max(0,player.boost-0.8);
-      player.boosting=true;
+    // Direction — plus réactive à basse vitesse, progressif à haute
+    const turnFactor = 0.025 + sp*0.022;
+    if(L) player.angle -= turnFactor;
+    if(R) player.angle += turnFactor;
+
+    // Accélération — seulement si touche enfoncée
+    if(A){
+      player.speed = Math.min(player.maxSpeed, player.speed + player.accel);
+    } else if(B){
+      // Freinage net
+      player.speed = Math.max(0, player.speed - player.accel*3);
     } else {
-      player.boosting=false;
-      // Recharge rapide quand on n'utilise pas le boost
-      player.boost=Math.min(100,player.boost+0.35);
+      // Friction forte : s'arrête rapidement sans touche
+      if(player.speed > 0.05) player.speed *= 0.88;
+      else player.speed = 0;
+    }
+
+    // Boost
+    if(bst){
+      player.speed = Math.min(player.maxSpeed*1.5, player.speed + player.accel*1.8);
+      player.boost = Math.max(0, player.boost - 0.9);
+      player.boosting = true;
+    } else {
+      player.boosting = false;
+      player.boost = Math.min(100, player.boost + 0.3);
+    }
+
+    // Léger glissement latéral (drift) à haute vitesse dans les virages
+    if(sp > 0.5 && (L || R)){
+      const driftAmount = sp * 0.008;
+      player.x += Math.cos(player.angle + Math.PI/2) * driftAmount * (L?-1:1);
+      player.y += Math.sin(player.angle + Math.PI/2) * driftAmount * (L?-1:1);
     }
 
     const nx=player.x+Math.cos(player.angle)*player.speed;
