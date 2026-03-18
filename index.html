@@ -1215,109 +1215,102 @@ function fmt2(ms){
 }
 
 async function loadStats(){
-  try {
-    // 1. Scores
-    const scRes = await fetch(SB_URL+'/rest/v1/scores?select=name,best_lap,total_time,created_at&order=best_lap.asc&limit=50', {headers:SB_HDR});
-    const scores = await scRes.json();
+  // Helper fetch qui ne crash pas
+  async function sbFetch(url){
+    try {
+      const r = await fetch(SB_URL+url, {headers:SB_HDR});
+      if(!r.ok) return [];
+      const d = await r.json();
+      return Array.isArray(d) ? d : [];
+    } catch(e){ return []; }
+  }
 
-    // 2. Visites totales
-    const vRes = await fetch(SB_URL+'/rest/v1/visits?select=created_at&order=created_at.desc', {headers:SB_HDR});
-    const visits = Array.isArray(await vRes.clone().json()) ? await vRes.json() : [];
+  // Afficher "chargement" pendant que ça charge
+  document.getElementById('st-visits').textContent='…';
+  document.getElementById('st-online').textContent='…';
+  document.getElementById('st-races').textContent='…';
 
-    // 3. En ligne (heartbeat dans les 2 dernières minutes)
-    const twoMinAgo = new Date(Date.now()-120000).toISOString();
-    const hRes = await fetch(SB_URL+`/rest/v1/heartbeats?select=session_id&created_at=gte.${twoMinAgo}`, {headers:SB_HDR});
-    const hb = Array.isArray(await hRes.clone().json()) ? await hRes.json() : [];
-    const online = new Set(hb.map(h=>h.session_id)).size;
+  // 1. Scores (le plus important)
+  const scores = await sbFetch('/rest/v1/scores?select=name,best_lap,total_time,created_at&order=best_lap.asc&limit=50');
 
-    // ── KPI Cards ──────────────────────────────────────────────
-    const totalVisits = visits.length || 0;
-    const today = new Date().toDateString();
-    const visitsToday = visits.filter(v=>new Date(v.created_at).toDateString()===today).length;
+  // 2. Visites
+  const visits = await sbFetch('/rest/v1/visits?select=created_at&order=created_at.desc&limit=1000');
 
-    document.getElementById('st-visits').textContent = totalVisits.toLocaleString('fr-FR');
-    document.getElementById('st-visits-today').textContent = `+${visitsToday} aujourd'hui`;
-    document.getElementById('st-online').textContent = Math.max(1, online);
-    document.getElementById('st-races').textContent = scores.length;
+  // 3. Heartbeats (en ligne)
+  const twoMinAgo = new Date(Date.now()-120000).toISOString();
+  const hb = await sbFetch(`/rest/v1/heartbeats?select=session_id&created_at=gte.${twoMinAgo}`);
+  const online = Math.max(1, new Set(hb.map(h=>h.session_id)).size);
 
-    if(scores.length){
-      const best = scores[0];
-      document.getElementById('st-best').textContent = fmt2(best.best_lap);
-      document.getElementById('st-best-by').textContent = `par ${best.name}`;
+  // ── KPI ────────────────────────────────────────────────────
+  const today = new Date().toDateString();
+  const visitsToday = visits.filter(v=>new Date(v.created_at).toDateString()===today).length;
+  document.getElementById('st-visits').textContent = visits.length.toLocaleString('fr-FR') || '0';
+  document.getElementById('st-visits-today').textContent = `+${visitsToday} aujourd'hui`;
+  document.getElementById('st-online').textContent = online;
+  document.getElementById('st-races').textContent = scores.length;
 
-      const unique = new Set(scores.map(s=>s.name)).size;
-      document.getElementById('st-players').textContent = unique;
+  if(scores.length){
+    const best = scores[0];
+    document.getElementById('st-best').textContent = fmt2(best.best_lap);
+    document.getElementById('st-best-by').textContent = `par ${best.name}`;
+    const unique = new Set(scores.map(s=>s.name)).size;
+    document.getElementById('st-players').textContent = unique;
+    const avg = Math.round(scores.reduce((a,s)=>a+(s.best_lap||0),0)/scores.length);
+    document.getElementById('st-avg').textContent = fmt2(avg);
+  } else {
+    ['st-best','st-players','st-avg'].forEach(id=>document.getElementById(id).textContent='—');
+    document.getElementById('st-best-by').textContent='Aucune course encore';
+  }
 
-      const avg = Math.round(scores.reduce((a,s)=>a+(s.best_lap||0),0)/scores.length);
-      document.getElementById('st-avg').textContent = fmt2(avg);
-    } else {
-      ['st-best','st-players','st-avg'].forEach(id=>document.getElementById(id).textContent='—');
-      document.getElementById('st-best-by').textContent='Aucune course encore';
-    }
+  // ── Graphique 24h ──────────────────────────────────────────
+  const now = new Date();
+  const hours = Array.from({length:24},(_,i)=>{
+    const h=new Date(now); h.setHours(now.getHours()-23+i,0,0,0); return h;
+  });
+  const counts = hours.map(h=>{
+    const next=new Date(h); next.setHours(h.getHours()+1);
+    return visits.filter(v=>{ const d=new Date(v.created_at); return d>=h&&d<next; }).length;
+  });
+  const maxC=Math.max(...counts,1);
+  document.getElementById('st-activity-bars').innerHTML = counts.map((c,i)=>{
+    const pct=Math.max(4,Math.round(c/maxC*100));
+    const col=c>0?`rgba(${Math.round(100+c/maxC*100)},255,0,${0.3+c/maxC*0.7})`:'#0a1408';
+    return `<div class="st-activity-bar" style="background:${col};height:${pct}%;border-radius:2px 2px 0 0;" data-tip="${c} visite${c>1?'s':''}"></div>`;
+  }).join('');
+  document.getElementById('st-activity-labels').innerHTML = hours
+    .filter((_,i)=>i%4===0)
+    .map(h=>`<span>${String(h.getHours()).padStart(2,'0')}h</span>`).join('');
 
-    // ── Graphique activité 24h ─────────────────────────────────
-    const now = new Date();
-    const hours = Array.from({length:24},(_,i)=>{
-      const h = new Date(now);
-      h.setHours(now.getHours()-23+i, 0,0,0);
-      return h;
-    });
-    const counts = hours.map(h=>{
-      const next = new Date(h); next.setHours(h.getHours()+1);
-      return visits.filter(v=>{
-        const d=new Date(v.created_at);
-        return d>=h && d<next;
-      }).length;
-    });
-    const maxC = Math.max(...counts, 1);
-    const barsEl = document.getElementById('st-activity-bars');
-    const labelsEl = document.getElementById('st-activity-labels');
-    barsEl.innerHTML = counts.map((c,i)=>{
-      const pct = Math.max(4, Math.round(c/maxC*100));
-      const col = c>0 ? `rgba(${Math.round(100+c/maxC*100)},255,0,${0.3+c/maxC*0.7})` : '#0a1408';
-      return `<div class="st-activity-bar" style="background:${col};height:${pct}%;border-radius:2px 2px 0 0;" data-tip="${c} visite${c>1?'s':''}"></div>`;
+  // ── Top 5 ──────────────────────────────────────────────────
+  const top5=scores.slice(0,5);
+  const worstLap=top5.length?top5[top5.length-1].best_lap:1;
+  const bestLap=top5.length?top5[0].best_lap:1;
+  const medals=['🥇','🥈','🥉','4','5'];
+  document.getElementById('st-top-bars').innerHTML = top5.map((s,i)=>{
+    const pct=top5.length===1?100:Math.round(100-(s.best_lap-bestLap)/(worstLap-bestLap||1)*60);
+    return `<div class="st-bar-row">
+      <div class="st-bar-lbl">${medals[i]} ${s.name}</div>
+      <div class="st-bar-track"><div class="st-bar-fill" style="width:${pct}%"></div></div>
+      <div class="st-bar-val">${fmt2(s.best_lap)}</div>
+    </div>`;
+  }).join('') || '<div style="color:#2a4a1a;text-align:center;padding:16px;font-size:.7rem;">Aucun score encore</div>';
+
+  // ── Tableau complet ────────────────────────────────────────
+  const tbody=document.getElementById('st-table-body');
+  if(!scores.length){
+    tbody.innerHTML='<tr><td colspan="5" style="color:#2a4a1a;text-align:center;padding:20px;">Aucune course enregistrée</td></tr>';
+  } else {
+    tbody.innerHTML=scores.map((s,i)=>{
+      const col=i===0?'#c8ff00':i<3?'#88cc44':'#8aaa6a';
+      const date=new Date(s.created_at).toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
+      return `<tr>
+        <td style="color:${col};font-weight:${i<3?700:400}">${['🥇','🥈','🥉'][i]||i+1}</td>
+        <td style="color:${col};font-weight:${i<3?700:400}">${s.name}</td>
+        <td style="font-variant-numeric:tabular-nums">${fmt2(s.best_lap)}</td>
+        <td style="font-variant-numeric:tabular-nums;color:#4a7a30">${fmt2(s.total_time)}</td>
+        <td style="color:#2a4a1a;font-size:.65rem">${date}</td>
+      </tr>`;
     }).join('');
-    labelsEl.innerHTML = hours.filter((_,i)=>i%4===0).map(h=>`<span>${String(h.getHours()).padStart(2,'0')}h</span>`).join('');
-
-    // ── Top 5 barres ───────────────────────────────────────────
-    const top5 = scores.slice(0,5);
-    const worstLap = top5.length ? top5[top5.length-1].best_lap : 1;
-    const bestLap = top5.length ? top5[0].best_lap : 1;
-    const medals = ['🥇','🥈','🥉','4','5'];
-    document.getElementById('st-top-bars').innerHTML = top5.map((s,i)=>{
-      const pct = top5.length===1 ? 100 : Math.round(100-(s.best_lap-bestLap)/(worstLap-bestLap||1)*60);
-      return `<div class="st-bar-row">
-        <div class="st-bar-lbl">${medals[i]} ${s.name}</div>
-        <div class="st-bar-track"><div class="st-bar-fill" style="width:${pct}%"></div></div>
-        <div class="st-bar-val">${fmt2(s.best_lap)}</div>
-      </div>`;
-    }).join('') || '<div style="color:#2a4a1a;text-align:center;padding:16px;font-size:.7rem;">Aucun score encore</div>';
-
-    // ── Tableau complet ────────────────────────────────────────
-    const tbody = document.getElementById('st-table-body');
-    if(!scores.length){
-      tbody.innerHTML='<tr><td colspan="5" style="color:#2a4a1a;text-align:center;padding:20px;">Aucune course enregistrée</td></tr>';
-    } else {
-      tbody.innerHTML = scores.map((s,i)=>{
-        const col = i===0?'#c8ff00':i<3?'#88cc44':'#8aaa6a';
-        const date = new Date(s.created_at).toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
-        return `<tr>
-          <td style="color:${col};font-weight:${i<3?700:400}">${['🥇','🥈','🥉'][i]||i+1}</td>
-          <td style="color:${col};font-weight:${i<3?700:400}">${s.name}</td>
-          <td style="font-variant-numeric:tabular-nums">${fmt2(s.best_lap)}</td>
-          <td style="font-variant-numeric:tabular-nums;color:#4a7a30">${fmt2(s.total_time)}</td>
-          <td style="color:#2a4a1a;font-size:.65rem">${date}</td>
-        </tr>`;
-      }).join('');
-    }
-
-  } catch(e){
-    console.warn('Stats load error:', e);
-    document.getElementById('st-visits').textContent='—';
-    document.getElementById('st-online').textContent='—';
-    document.getElementById('st-races').textContent='—';
-    document.getElementById('st-table-body').innerHTML=
-      '<tr><td colspan="5" style="color:#cc4400;text-align:center;padding:20px;">Erreur de chargement — vérifie la connexion</td></tr>';
   }
 }
 
